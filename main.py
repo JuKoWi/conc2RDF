@@ -19,6 +19,10 @@ class Dataset_dir:
         self.allfiles = os.listdir(path)
         self.alldata = {}
         self.num_points = None
+        self.x_data = None
+        self.y_data = None
+        self.r_values = None # the r values for which  the datapoints are defined
+        self.size = None
     def get_relevant_files(self):
         for f in self.allfiles:
             newfile = file(f, self.path)
@@ -29,10 +33,14 @@ class Dataset_dir:
             f.find_header()
             f.get_percentage()
             f.read_table()
-            self.alldata[f.percentage] = f.data
+        self.r_values = self.files[0].data[0]
         list_num_bins = [f.num_bins for f in self.files]
         assert all(element == list_num_bins[0] for element in list_num_bins), "Not all training RDF have the same number of datapoints"
         self.num_points = list_num_bins[0]
+        self.x_data = torch.tensor([f.percentage for f in self.files])
+        self.y_data = np.array([f.data[1] for f in self.files])
+        self.y_data = torch.tensor(self.y_data)
+        self.size = len(self.files)
         
 
         
@@ -73,8 +81,8 @@ class file:
 new_dataset = Dataset_dir("/largedisk/julius_w/Development/conc2RDF/training_data")
 new_dataset.get_relevant_files()
 new_dataset.extract_data()
-
-
+print(new_dataset.x_data.size())
+print(new_dataset.y_data.size())
 
 
 device = (
@@ -88,9 +96,9 @@ print(f"Using {device} device")
 
 
 class NeuralNetwork(nn.Module):
-    def __init__():
+    def __init__(self):
         super().__init__()
-        self.flatten() == nn.Flatten()
+        self.flatten = nn.Flatten()
         self.linear_relu_stack = nn.Sequential(
             nn.Linear(1, 64),
             nn.ReLU(),
@@ -104,5 +112,26 @@ class NeuralNetwork(nn.Module):
         logits = self.linear_relu_stack(x)
         return logits
     
-model = NeuralNetwork.to(device)
-X = 
+model = NeuralNetwork().to(device)
+loss_fn = nn.MSELoss()
+optimizer = torch.optim.Adam(model.parameters())
+
+def train(Dataset_dir, model, loss_fn, optimizer):
+    model.train()
+    for i in range(Dataset_dir.size):
+        print(Dataset_dir.x_data[0])
+        X, y = Dataset_dir.x_data[i].to(device), Dataset_dir.y_data[i].to(device)
+        pred = model(X)
+        loss = loss_fn(pred, y)
+
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+        loss, current = loss.item(), (i + 1) * len(X)
+        print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+
+epochs = 5
+for t in range(epochs):
+    print(f"Epoch {t+1}\n -----------------------")
+    train(new_dataset, model, loss_fn, optimizer)
+print("Done!")
