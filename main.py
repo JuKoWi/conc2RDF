@@ -7,8 +7,12 @@ from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 import os
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
-
+# constants
+DEBUG_MODE = True
 
 #first preprocess data
 
@@ -37,9 +41,9 @@ class Dataset_dir:
         list_num_bins = [f.num_bins for f in self.files]
         assert all(element == list_num_bins[0] for element in list_num_bins), "Not all training RDF have the same number of datapoints"
         self.num_points = list_num_bins[0]
-        self.x_data = torch.tensor([f.percentage for f in self.files])
+        self.x_data = torch.tensor([[f.percentage] for f in self.files]) #it seems important that every element is a list on its own, otherwise dimensionality error
         self.y_data = np.array([f.data[1] for f in self.files])
-        self.y_data = torch.tensor(self.y_data)
+        self.y_data = torch.tensor(self.y_data, dtype=torch.float)
         self.size = len(self.files)
         
 
@@ -81,57 +85,72 @@ class file:
 new_dataset = Dataset_dir("/largedisk/julius_w/Development/conc2RDF/training_data")
 new_dataset.get_relevant_files()
 new_dataset.extract_data()
-print(new_dataset.x_data.size())
-print(new_dataset.y_data.size())
 
 
 device = (
-    "cuda"
-    if torch.cuda.is_available()
-    else "mps"
-    if torch.backends.mps.is_available()
-    else "cpu"
+   "cuda"
+   if torch.cuda.is_available()
+   else "cpu"
 )
+
 print(f"Using {device} device")
 
 
 class NeuralNetwork(nn.Module):
     def __init__(self):
-        super().__init__()
-        self.flatten = nn.Flatten()
-        self.linear_relu_stack = nn.Sequential(
-            nn.Linear(1, 64),
-            nn.ReLU(),
-            nn.Linear(64, 32),
-            nn.ReLU(),
-            nn.Linear(32,new_dataset.num_points)
-        )
+        super(NeuralNetwork, self).__init__()
+        self.fc1 = nn.Linear(1, 64)
+        self.fc2 = nn.Linear(64, 32)
+        self.fc3 = nn.Linear(32, new_dataset.num_points) 
 
     def forward(self, x):
-        x = self.flatten(x)
-        logits = self.linear_relu_stack(x)
-        return logits
-    
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        return x
+
+
 model = NeuralNetwork().to(device)
 loss_fn = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters())
 
+
+# some random data as well as some debugging
+trainlist = torch.tensor([[10.0], [20.0] , [40.0], [60.0], [90.0]])#why does it only work if I take the list like this
+trainlisty = torch.rand(100,5)
+print(trainlisty[:,1])
+print(new_dataset.x_data[1])
+print(new_dataset.y_data[0])
+
+
+
+#generate  random set for training
+choice = np.random.choice(range(new_dataset.size), 6, replace = False)
+for_test = [i for i in range(new_dataset.size) if i not in choice]
+print(choice)
+print(for_test)
+
 def train(Dataset_dir, model, loss_fn, optimizer):
     model.train()
-    for i in range(Dataset_dir.size):
-        print(Dataset_dir.x_data[0])
-        X, y = Dataset_dir.x_data[i].to(device), Dataset_dir.y_data[i].to(device)
+    loss_value = 0
+    for i in choice:    
+        X = Dataset_dir.x_data[i].to(device)
+        y = Dataset_dir.y_data[i].to(device)
         pred = model(X)
         loss = loss_fn(pred, y)
-
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
-        loss, current = loss.item(), (i + 1) * len(X)
-        print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+        if DEBUG_MODE:
+            print(loss.item())
+        loss_value += loss.item()
+    loss_value = loss_value / len(choice) 
+    print(f"loss: {loss_value:>7f}")
 
-epochs = 5
-for t in range(epochs):
+epochs = 3 
+print(device)
+for t in range(epochs): 
     print(f"Epoch {t+1}\n -----------------------")
     train(new_dataset, model, loss_fn, optimizer)
+
 print("Done!")
