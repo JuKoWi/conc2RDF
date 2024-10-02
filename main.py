@@ -7,9 +7,11 @@ from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 import os
 import numpy as np
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
+
+from tqdm import tqdm
 
 # constants
 DEBUG_MODE = True
@@ -45,7 +47,7 @@ class Dataset_dir:
         self.y_data = np.array([f.data[1] for f in self.files])
         self.y_data = torch.tensor(self.y_data, dtype=torch.float)
         self.size = len(self.files)
-        
+     #TODO sort the lsit of concentrations   
 
         
 class file:  
@@ -112,25 +114,32 @@ class NeuralNetwork(nn.Module):
 
 model = NeuralNetwork().to(device)
 loss_fn = nn.MSELoss()
-optimizer = torch.optim.Adam(model.parameters())
+optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
 
 # some random data as well as some debugging
+
+all_concentrations_list = [10, 20,30,40,50,60,70,80,90,100]
+train_concentrations_list = [20, 40, 60, 90]
+test_concentrations_list = [10, 30, 50, 70, 80, 100]
 trainlist = torch.tensor([[10.0], [20.0] , [40.0], [60.0], [90.0]])#why does it only work if I take the list like this
 trainlisty = torch.rand(100,5)
-print(trainlisty[:,1])
-print(new_dataset.x_data[1])
-print(new_dataset.y_data[0])
+#print(trainlisty)
+# print(trainlisty[:,1])
+# print(new_dataset.x_data[1])
+# print(new_dataset.y_data[0])
+
 
 
 
 #generate  random set for training
-choice = np.random.choice(range(new_dataset.size), 6, replace = False)
+choice = [0, 3, 5, 7, 9] 
 for_test = [i for i in range(new_dataset.size) if i not in choice]
 print(choice)
+print([new_dataset.x_data[i] for i in choice])
 print(for_test)
 
-def train(Dataset_dir, model, loss_fn, optimizer):
+def train(Dataset_dir, model, loss_fn, optimizer, show_each_batch=False):
     model.train()
     loss_value = 0
     for i in choice:    
@@ -141,16 +150,35 @@ def train(Dataset_dir, model, loss_fn, optimizer):
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
-        if DEBUG_MODE:
-            print(loss.item())
+        if show_each_batch:
+            print(f"concentration {X.item()} has loss {loss.item()}")
         loss_value += loss.item()
+
     loss_value = loss_value / len(choice) 
-    print(f"loss: {loss_value:>7f}")
+#    print(f"loss: {loss_value:>7f}")
+    return loss_value
 
-epochs = 3 
+
+# def test(Dataset_dir, model, loss_fn):
+#     model.eval()
+#     test_loss, correct = 0, 0
+#     with torch.no_grad():
+#         for i in len(trainlist):
+#             X = trainlist[i].to(device)
+#             y = trainlisty[:,i].to(device)
+
+epochs = 2000 
 print(device)
-for t in range(epochs): 
-    print(f"Epoch {t+1}\n -----------------------")
-    train(new_dataset, model, loss_fn, optimizer)
 
-print("Done!")
+losses = []
+validations_losses = []
+for t in tqdm(range(epochs)): 
+#    print(f"Epoch {t+1}\n -----------------------")
+    avg_loss = train(new_dataset, model, loss_fn, optimizer)
+    losses.append(avg_loss)
+#print("Done!")
+
+#plt.plot(losses, "o", ms =3)
+#plt.show()
+
+torch.save(model, "model.pth")
