@@ -29,6 +29,7 @@ class Dataset_dir:
         self.y_data = None
         self.r_values = None # the r values for which  the datapoints are defined
         self.size = None
+        self.data = None
     def get_relevant_files(self):
         for f in self.allfiles:
             newfile = file(f, self.path)
@@ -47,6 +48,9 @@ class Dataset_dir:
         self.y_data = np.array([f.data[1] for f in self.files])
         self.y_data = torch.tensor(self.y_data, dtype=torch.float)
         self.size = len(self.files)
+        self.data = np.array([np.append(f.percentage, f.data[1]) for f in self.files])
+        self.data = self.data[np.argsort(self.data[:,0])] #sort the data for the different concentrations concentrationwise
+        self.data = torch.tensor(self.data, dtype = torch.float) 
      #TODO sort the lsit of concentrations   
 
         
@@ -87,6 +91,7 @@ class file:
 new_dataset = Dataset_dir("/largedisk/julius_w/Development/conc2RDF/training_data")
 new_dataset.get_relevant_files()
 new_dataset.extract_data()
+print(new_dataset.data)
 
 
 device = (
@@ -98,18 +103,34 @@ device = (
 print(f"Using {device} device")
 
 
+# class NeuralNetwork(nn.Module):
+#     def __init__(self):
+#         super(NeuralNetwork, self).__init__()
+#         self.fc1 = nn.Linear(1, 64)
+#         self.fc2 = nn.Linear(64, 64)
+#         self.fc3 = nn.Linear(64, new_dataset.num_points) 
+
+#     def forward(self, x):
+#         x = F.relu(self.fc1(x))
+#         x = F.relu(self.fc2(x))
+#         x = F.relu(self.fc3(x))
+#         return x
+
 class NeuralNetwork(nn.Module):
     def __init__(self):
-        super(NeuralNetwork, self).__init__()
-        self.fc1 = nn.Linear(1, 64)
-        self.fc2 = nn.Linear(64, 32)
-        self.fc3 = nn.Linear(32, new_dataset.num_points) 
+        super().__init__()
+        self.linear_relu_stack = nn.Sequential(
+            nn.Linear(1, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, new_dataset.num_points)
+        )
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        return x
+        return self.linear_relu_stack(x)
+
+
 
 
 model = NeuralNetwork().to(device)
@@ -117,34 +138,20 @@ loss_fn = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
 
-# some random data as well as some debugging
-
-all_concentrations_list = [10, 20,30,40,50,60,70,80,90,100]
-train_concentrations_list = [20, 40, 60, 90]
-test_concentrations_list = [10, 30, 50, 70, 80, 100]
-trainlist = torch.tensor([[10.0], [20.0] , [40.0], [60.0], [90.0]])#why does it only work if I take the list like this
-trainlisty = torch.rand(100,5)
-#print(trainlisty)
-# print(trainlisty[:,1])
-# print(new_dataset.x_data[1])
-# print(new_dataset.y_data[0])
-
-
-
 
 #generate  random set for training
-choice = [0, 3, 5, 7, 9] 
+choice = [0, 3, 5, 7, 9] #indexes in the dorted concentration list 
 for_test = [i for i in range(new_dataset.size) if i not in choice]
 print(choice)
-print([new_dataset.x_data[i] for i in choice])
+print([new_dataset.data[i,0] for i in choice])
 print(for_test)
 
 def train(Dataset_dir, model, loss_fn, optimizer, show_each_batch=False):
     model.train()
     loss_value = 0
     for i in choice:    
-        X = Dataset_dir.x_data[i].to(device)
-        y = Dataset_dir.y_data[i].to(device)
+        X = torch.tensor([Dataset_dir.data[i,0]]).to(device)
+        y = Dataset_dir.data[i,1:].to(device)
         pred = model(X)
         loss = loss_fn(pred, y)
         loss.backward()
@@ -153,22 +160,23 @@ def train(Dataset_dir, model, loss_fn, optimizer, show_each_batch=False):
         if show_each_batch:
             print(f"concentration {X.item()} has loss {loss.item()}")
         loss_value += loss.item()
-
     loss_value = loss_value / len(choice) 
 #    print(f"loss: {loss_value:>7f}")
     return loss_value
 
 
-# def test(Dataset_dir, model, loss_fn):
-#     model.eval()
-#     test_loss, correct = 0, 0
-#     with torch.no_grad():
-#         for i in len(trainlist):
-#             X = trainlist[i].to(device)
-#             y = trainlisty[:,i].to(device)
+def test(Dataset_dir, model, loss_fn):
+    model.eval()
+    test_loss, correct = 0, 0
+    with torch.no_grad():
+        for i in len(trainlist):
+            X = trainlist[i].to(device)
+            y = trainlisty[:,i].to(device)
+
+
 
 epochs = 2000 
-print(device)
+#print(device)
 
 losses = []
 validations_losses = []
