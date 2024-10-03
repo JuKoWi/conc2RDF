@@ -1,0 +1,14 @@
+[tool.pylint]
+disable = ""  # Empty disables nothing, thus enabling all checks.
+
+# Enable optional reports
+reports = true  # If you want pylint to generate reports after the checks.
+
+# List all enabled error, warning, refactor, and convention messages
+enable = [
+    "all"
+]
+
+[tool.ruff.lint]
+select = ["ALL"]
+
