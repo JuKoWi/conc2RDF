@@ -1,31 +1,29 @@
-"""A program uses a vanilla neural network to map an RDF on a concentration."""
-
 import os
-import pathlib
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from torch import nn
 from tqdm import tqdm
+from scipy.signal import savgol_filter
 
-# constants
+# Constants
 DEBUG_MODE = False
 DIRECTORY_PATH = "/largedisk/julius_w/Development/conc2RDF/training_data"
-
 
 class DataDir:
     """Operations for whole directory."""
 
     def __init__(self, path: str) -> None:
-        """Variables associated with the whole dataset/directory."""
-        self.path = pathlib.Path(path)
-        self.files = []
-        self.allfiles = os.listdir(path)
-        self.num_points = None
-        self.r_values = None  # the r values for which  the datapoints are defined
-        self.size = None
-        self.data = None
+            """Variables associated with the whole dataset/directory."""
+            self.path = Path(path)
+            self.files = []
+            self.allfiles = os.listdir(path)
+            self.num_points = None
+            self.r_values = None  # the r values for which  the datapoints are defined
+            self.size = None
+            self.data = None
 
     def get_relevant_files(self) -> None:
         """Only use data from rdf files."""
@@ -61,9 +59,9 @@ class DataDir:
 
 
 class File:
-    """operations on single files."""
+    """Operations on single files."""
 
-    def __init__(self, filename: str, directory: pathlib.Path) -> None:
+    def __init__(self, filename : str, directory : Path) -> None:
         """Variables associated with a single file."""
         self.filename = filename
         self.percentage = None
@@ -98,31 +96,47 @@ class File:
         self.data = np.loadtxt(self.path, skiprows=self.header).T
         self.num_bins = np.shape(self.data)[1]
 
+# Custom EWMA Layer
+class EWMALayer(nn.Module):
+    """Exponentially Weighted Moving Average Layer."""
+
+    def __init__(self, alpha=0.3):
+        """Initialize the smoothing factor (alpha)."""
+        super(EWMALayer, self).__init__()
+        self.alpha = alpha
+
+    def forward(self, x):
+        """Apply EWMA to the input tensor."""
+        result = torch.zeros_like(x)
+        result[0] = x[0]  # First point remains the same
+        for t in range(1, x.shape[0]):
+            result[t] = self.alpha * x[t] + (1 - self.alpha) * result[t - 1]
+        return result
 
 class NeuralNetwork(nn.Module):
     """Neural network that contains all the parameters."""
 
     def __init__(self, dataset: DataDir) -> None:
-        """Create vanilla NN."""
+        """Create vanilla NN and append EWMA as last layer."""
         super().__init__()
         self.linear_relu_stack = nn.Sequential(
             nn.Linear(1, 64),
-            # with 512 for all hidden layers loss and val_loss oscillate after some time
             nn.ReLU(),
             nn.Linear(64, 64),
-            # 512 instead of 64, lower learning rate no oscillation but no better result
             nn.ReLU(),
             nn.Linear(64, dataset.num_points),
         )
+        self.ewma_layer = EWMALayer(alpha=0.3)  # Add EWMA layer
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Perform forward propagation."""
-        return self.linear_relu_stack(x)
+        """Perform forward propagation and apply EWMA."""
+        x = self.linear_relu_stack(x)
+        x = self.ewma_layer(x)  # Apply EWMA smoothing to the output
+        return x
 
-
-# backpropagation for training
+# Backpropagation for training
 def train(dataset: DataDir, model: NeuralNetwork, train_set: list):
-    """ "Train the NN on a small sample of training data."""
+    """Train the NN on a small sample of training data."""
     device = "cuda" if torch.cuda.is_available() else "cpu"
     loss_fn = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
@@ -142,8 +156,7 @@ def train(dataset: DataDir, model: NeuralNetwork, train_set: list):
         print(f"loss: {loss_value:>7f}")
     return loss_value
 
-
-# compare prediction with testset
+# Compare prediction with testset
 def test(dataset: DataDir, model: NeuralNetwork, test_set: list):
     """Compare prediction with real test-data."""
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -159,27 +172,24 @@ def test(dataset: DataDir, model: NeuralNetwork, test_set: list):
     test_loss /= len(test_set)
     return test_loss
 
-
 def main() -> None:
-    """Load the data, set up NN parameters, perform the training and save the NN."""
+    """Load the data, set up NN parameters, perform the training, and save the NN."""
     new_dataset = DataDir(DIRECTORY_PATH)
     new_dataset.get_relevant_files()
     new_dataset.extract_data()
 
-    # set variables and parameters
+    # Set variables and parameters
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = NeuralNetwork(new_dataset).to(device)
 
-    # set training choice
-    choice = [0, 2, 4, 6, 9]  # indexes in the sorted concentration list
+    # Set training choice
+    choice = [0, 2, 4, 6, 9]  # Indexes in the sorted concentration list
     for_test = [i for i in range(new_dataset.size) if i not in choice]
     print(choice)
-    print(
-        f"Training with the concentrations{[new_dataset.data[i, 0].item() for i in choice]}"
-    )
+    print(f"Training with the concentrations {[new_dataset.data[i, 0].item() for i in choice]}")
 
-    # perform training loop
-    epochs = 2500
+    # Perform training loop
+    epochs = 1500
     losses = []
     validations_losses = []
     for t in tqdm(range(epochs)):
@@ -190,7 +200,7 @@ def main() -> None:
         val_loss = test(new_dataset, model, for_test)
         validations_losses.append(val_loss)
 
-    # plot optimization curve
+    # Plot optimization curve
     fig, axs = plt.subplots(2, 1)
     axs[0].plot(losses, "o", ms=1, label="trainig")
     axs[1].plot(validations_losses, "o", ms=1, label="testing")
@@ -200,9 +210,8 @@ def main() -> None:
     axs[1].legend()
     plt.show()
 
-    # save the model
+    # Save the model
     torch.save(model, "model.pth")
-
 
 if __name__ == "__main__":
     main()
