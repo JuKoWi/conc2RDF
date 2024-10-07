@@ -102,9 +102,16 @@ class File:
 class NeuralNetwork(nn.Module):
     """Neural network that contains all the parameters."""
 
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    loss_fn = nn.MSELoss()
+    epochs = 2000
+
     def __init__(self, dataset: DataDir) -> None:
         """Create vanilla NN."""
         super().__init__()
+        self.dataset = dataset
+        self.losses = []
+        self.validations_losses = []
         self.linear_relu_stack = nn.Sequential(
             nn.Linear(1, 64),
             # with 512 for all hidden layers loss and val_loss oscillate after some time
@@ -114,50 +121,69 @@ class NeuralNetwork(nn.Module):
             nn.ReLU(),
             nn.Linear(64, dataset.num_points),
         )
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=0.0001)
+        self.to(self.device)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform forward propagation."""
         return self.linear_relu_stack(x)
 
 
-# backpropagation for training
-def train(dataset: DataDir, model: NeuralNetwork, train_set: list):
-    """ "Train the NN on a small sample of training data."""
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    loss_fn = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
-    model.train()
-    loss_value = 0
-    for i in train_set:
-        x_data = torch.tensor([dataset.data[i, 0]]).to(device)
-        y_data = dataset.data[i, 1:].to(device)
-        pred = model(x_data)
-        loss = loss_fn(pred, y_data)
-        loss.backward()
-        optimizer.step()
-        optimizer.zero_grad()
-        loss_value += loss.item()
-    loss_value = loss_value / len(train_set)
-    if DEBUG_MODE:
-        print(f"loss: {loss_value:>7f}")
-    return loss_value
+    def train_step(self, train_set : list) -> float:
+        """"Train the NN on a small sample of training data."""
+        self.train()
+        loss_value = 0
+        for i in train_set:
+            x_data = torch.tensor([self.dataset.data[i, 0]]).to(NeuralNetwork.device)
+            y_data = self.dataset.data[i, 1:].to(NeuralNetwork.device)
+            pred = self(x_data)
+            loss = NeuralNetwork.loss_fn(pred, y_data)
+            loss.backward()
+            self.optimizer.step()
+            self.optimizer.zero_grad()
+            loss_value += loss.item()
+        loss_value = loss_value / len(train_set)
+        if DEBUG_MODE:
+            print(f"loss: {loss_value:>7f}")
+        return loss_value
 
+    def test_step(self, test_set: list) -> float:
+        """Compare prediction with real test-data."""
+        self.eval()
+        test_loss = 0
+        with torch.no_grad():
+            for i in test_set:
+                x = torch.tensor([self.dataset.data[i, 0]]).to(NeuralNetwork.device)
+                y = self.dataset.data[i, 1:].to(NeuralNetwork.device)
+                pred = self(x)
+                test_loss += NeuralNetwork.loss_fn(pred, y).item()
+        test_loss /= len(test_set)
+        return test_loss
 
-# compare prediction with testset
-def test(dataset: DataDir, model: NeuralNetwork, test_set: list):
-    """Compare prediction with real test-data."""
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    loss_fn = nn.MSELoss()
-    model.eval()
-    test_loss = 0
-    with torch.no_grad():
-        for i in test_set:
-            x = torch.tensor([dataset.data[i, 0]]).to(device)
-            y = dataset.data[i, 1:].to(device)
-            pred = model(x)
-            test_loss += loss_fn(pred, y).item()
-    test_loss /= len(test_set)
-    return test_loss
+    def train_test_loop(self, train_set: list, test_set: list):
+        """perform several train and test steps and record the average loss"""
+        for t in tqdm(range(NeuralNetwork.epochs)):
+            if DEBUG_MODE:
+                print(f"Epoch {t+1}\n -----------------------")
+            avg_loss = self.train_step(train_set)
+            self.losses.append(avg_loss)
+            val_loss = self.test_step(test_set)
+            self.validations_losses.append(val_loss)
+
+    def get_dashboard(self):
+        """plot """
+        fig, axs = plt.subplots(2, 1)
+        axs[0].plot(self.losses, "o", ms=3, label="trainig")
+        axs[1].plot(self.validations_losses, "o", ms=3, label="testing")
+        axs[0].semilogy()
+        axs[1].semilogy()
+        axs[0].legend()
+        axs[1].legend()
+        plt.show()
+
+    def save_model(self):
+        torch.save(self, "model.pth")
+
 
 
 def main() -> None:
@@ -166,9 +192,8 @@ def main() -> None:
     new_dataset.get_relevant_files()
     new_dataset.extract_data()
 
-    # set variables and parameters
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = NeuralNetwork(new_dataset).to(device)
+    #initialize NeuralNetwork
+    my_network = NeuralNetwork(new_dataset)
 
     # set training choice
     choice = [0, 2, 4, 6, 9]  # indexes in the sorted concentration list
@@ -178,30 +203,9 @@ def main() -> None:
         f"Training with the concentrations{[new_dataset.data[i, 0].item() for i in choice]}"
     )
 
-    # perform training loop
-    epochs = 2500
-    losses = []
-    validations_losses = []
-    for t in tqdm(range(epochs)):
-        if DEBUG_MODE:
-            print(f"Epoch {t+1}\n -----------------------")
-        avg_loss = train(new_dataset, model, choice)
-        losses.append(avg_loss)
-        val_loss = test(new_dataset, model, for_test)
-        validations_losses.append(val_loss)
-
-    # plot optimization curve
-    fig, axs = plt.subplots(2, 1)
-    axs[0].plot(losses, "o", ms=1, label="trainig")
-    axs[1].plot(validations_losses, "o", ms=1, label="testing")
-    axs[0].semilogy()
-    axs[1].semilogy()
-    axs[0].legend()
-    axs[1].legend()
-    plt.show()
-
-    # save the model
-    torch.save(model, "model.pth")
+    my_network.train_test_loop(choice, for_test)
+    my_network.get_dashboard()
+    my_network.save_model()
 
 
 if __name__ == "__main__":
