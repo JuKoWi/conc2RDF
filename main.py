@@ -160,8 +160,8 @@ class NeuralNetwork(nn.Module):
         test_loss /= len(test_set)
         return test_loss
 
-    def train_test_loop(self, train_set: list, test_set: list):
-        """perform several train and test steps and record the average loss"""
+    def train_test_loop(self, train_set: list, test_set: list) -> None:
+        """Perform several train and test steps and record the average loss."""
         for t in tqdm(range(NeuralNetwork.epochs)):
             if DEBUG_MODE:
                 print(f"Epoch {t+1}\n -----------------------")
@@ -170,8 +170,8 @@ class NeuralNetwork(nn.Module):
             val_loss = self.test_step(test_set)
             self.validations_losses.append(val_loss)
 
-    def get_dashboard(self):
-        """plot """
+    def get_dashboard(self) -> None:
+        """Plot information on training procedure."""
         fig, axs = plt.subplots(2, 1)
         axs[0].plot(self.losses, "o", ms=3, label="trainig")
         axs[1].plot(self.validations_losses, "o", ms=3, label="testing")
@@ -181,7 +181,8 @@ class NeuralNetwork(nn.Module):
         axs[1].legend()
         plt.show()
 
-    def save_model(self):
+    def save_model(self) -> None:
+        """Save model to file. For reuse the class definition must be provided."""
         torch.save(self, "model.pth")
 
 
