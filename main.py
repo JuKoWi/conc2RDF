@@ -161,6 +161,7 @@ class NeuralNetwork(nn.Module):
         return test_loss
 
     def train_test_loop(self, train_set: list, test_set: list):
+        """perform several train and test steps and record the average loss"""
         for t in tqdm(range(NeuralNetwork.epochs)):
             if DEBUG_MODE:
                 print(f"Epoch {t+1}\n -----------------------")
@@ -170,6 +171,7 @@ class NeuralNetwork(nn.Module):
             self.validations_losses.append(val_loss)
 
     def get_dashboard(self):
+        """plot """
         fig, axs = plt.subplots(2, 1)
         axs[0].plot(self.losses, "o", ms=3, label="trainig")
         axs[1].plot(self.validations_losses, "o", ms=3, label="testing")
