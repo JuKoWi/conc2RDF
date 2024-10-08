@@ -72,6 +72,21 @@ class File:
         self.path = directory / filename
         self.num_bins = None
 
+    def is_relevant(self) -> bool:
+        """Check if the file contrains rdf-data."""
+        return "rdf" in self.filename
+
+    def read_table(self) -> None:
+        """Read the rdf data for one file to np.array."""
+        self.data = np.loadtxt(self.path, skiprows=self.header).T
+        self.num_bins = np.shape(self.data)[1]
+
+class XVGFile(File):
+    """Subclass to deal with XVG files."""
+
+    def __init__(self):
+        super().__init__()
+
     def get_percentage(self) -> None:
         """Read the butanol concentration from the filename."""
         if self.filename.startswith("rdf") and self.filename.endswith("bu.xvg"):
@@ -88,15 +103,6 @@ class File:
                     self.header += 1
                 else:
                     break
-
-    def is_relevant(self) -> bool:
-        """Check if the file contrains rdf-data."""
-        return "rdf" in self.filename
-
-    def read_table(self) -> None:
-        """Read the rdf data for one file to np.array."""
-        self.data = np.loadtxt(self.path, skiprows=self.header).T
-        self.num_bins = np.shape(self.data)[1]
 
 
 class NeuralNetwork(nn.Module):
