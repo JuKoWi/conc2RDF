@@ -1,5 +1,6 @@
-"""Where is teh best place to ensure that the tensos in RdfDataSet have dtype=torch.float
-Where should I keep the information of the r-values to which the radf-output values are assigned? Would make sense to me to keep it in the RdfDataSet class
+"""Where is the best place to ensure that the tensors in RdfDataSet have dtype=torch.float
+TODO : Where should I keep the information of the r-values to which the rdf-output values are assigned? Would make sense to me to keep it in the RdfDataSet class
+Do I have to add a .to(device) somewhere to actually use the gpu?
 
 flags:
     -p path to data containing directory
@@ -47,11 +48,13 @@ class RdfDataSet(Dataset):
             # Initialize inputs and outputs with the shape of the first input/output
             self.inputs = new_input
             self.outputs = new_output
-        self.inputs = torch.cat((self.inputs, new_input))
-        self.outputs = torch.cat((self.outputs, new_output))
+        if new_input not in self.inputs:
+            self.inputs = torch.cat((self.inputs, new_input))
+            self.outputs = torch.cat((self.outputs, new_output))
 
 
 class DataSetFromList(RdfDataSet):
+    """This subclass of RdfDataSet allows instances to be generated from a list if filepaths. It depends on the FromFile class"""
     def __init__(self, pathlist):
         self.inputs = None
         self.outputs = None
@@ -59,23 +62,30 @@ class DataSetFromList(RdfDataSet):
 
     def get_from_pathlist(self, pathlist):
         for path in pathlist:
-            varpath = Path(path)
-            if varpath.suffix == ".xvg":
+            pathpath = Path(path)
+            if pathpath.suffix == ".xvg":
                 file = FromXVGFile(path)
-            file.find_header()
+            else:
+                print("ERROR: Invalid file format")
             file.get_percentage()
             file.read_table()
             self.add_item(file.input, file.output)
 
 
 class FromFile:
+    """Object that handles and contains information from one single file.
+
+    Subclasses for other filetypes than xvg must implement
+    get_percentage and read_table method to guarantee polymorphism
+    """
+
     def __init__(self, path):
         self.path = Path(path)
         self.filename = Path(path).name
-        self.header = 0
         self.input = None
         self.output = None
         self.num_bins = None
+        self.rvalues = None
 
     def is_relevant(self) -> bool:
         """Check if the file contrains rdf-data."""
@@ -83,8 +93,11 @@ class FromFile:
 
 
 class FromXVGFile(FromFile):
+    """Subclass to read and contain information fom xvg file."""
+
     def __init__(self, path):
         super().__init__(path)
+        self.header = 0
 
     def get_percentage(self) -> None:
         """Read the butanol concentration from the filename."""
@@ -94,7 +107,8 @@ class FromXVGFile(FromFile):
         else:
             print("ERROR: Files do not match pattern")
 
-    def find_header(self) -> None:
+
+    def read_table(self) -> None:
         """Check how many lines to skip when reading the data."""
         with open(self.path) as f:
             lines = f.readlines()
@@ -104,13 +118,18 @@ class FromXVGFile(FromFile):
                 else:
                     break
 
-    def read_table(self) -> None:
-        """Read the rdf data for one file to np.array."""
+        """Read the rdf data for one file to np.array -> tourch tensor"""
         self.output = np.loadtxt(self.path, skiprows=self.header).T
+        self.rvalues = self.output[0]
         self.num_bins = np.shape(self.output[1])
         self.output = torch.tensor([self.output[1]], dtype=torch.float)
 
+
 class Directory:
+    """A class that finds data containing files in a directory and 
+    returns the relevant files as a list of paths.
+    """
+
     def __init__(self, path):
         self.pathpath = Path(path)
         self.path = path
@@ -119,9 +138,10 @@ class Directory:
 
     def get_relevant_files(self):
         for f in self.allfiles:
-            newfile = FromXVGFile(self.pathpath / f)
-            if newfile.is_relevant():
-                self.filepaths.append(self.path + "/" + f)
+            if f.endswith(".xvg"):
+                newfile = FromXVGFile(self.pathpath / f)
+                if newfile.is_relevant():
+                    self.filepaths.append(self.path + "/" + f)
         return self.filepaths
 
 
@@ -146,6 +166,7 @@ class NeuralNetwork(nn.Module):
         return self.network(x)
 
     def train_network(self, train_data: RdfDataSet, test_data: RdfDataSet, epochs=1000, print_progress=False):
+        #TODO insert tqdm bar
         for epoch in range(epochs):
             avg_loss = 0.0
             avg_val_loss = 0.0
@@ -219,6 +240,7 @@ def main():
     arg_dict = get_input_args()
     newdir = Directory(arg_dict["dir_path"])
     newset = DataSetFromList(newdir.get_relevant_files())
+    print(newset.inputs)
     train_conc = [10.0, 30.0, 50.0, 70.0, 90.0]
     test_conc = [20.0, 40.0, 60.0, 80.0, 100.0]
     train_data = newset.get_subset_from_list(newset.get_indices(train_conc))
