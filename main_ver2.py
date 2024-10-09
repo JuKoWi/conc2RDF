@@ -16,6 +16,7 @@ import torch
 import torch.optim as optim
 from torch import nn
 from torch.utils.data import Dataset
+from copy import deepcopy
 
 
 class RdfDataSet(Dataset):
@@ -122,7 +123,8 @@ class FromXVGFile(FromFile):
         self.output = np.loadtxt(self.path, skiprows=self.header).T
         self.rvalues = self.output[0]
         self.num_bins = np.shape(self.output[1])
-        self.output = torch.tensor([self.output[1]], dtype=torch.float)
+        self.output = np.expand_dims(self.output[1], axis=0)
+        self.output = torch.tensor(self.output, dtype=torch.float)
 
 
 class Directory:
@@ -146,14 +148,16 @@ class Directory:
 
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, num_outputs: int, lr=0.001):
+    def __init__(self, num_outputs: int, lr=0.001, num_neuron=64):
         super().__init__()
         self.network = nn.Sequential(
-            nn.Linear(1, 64),
+            nn.Linear(1, num_neuron),
             nn.ReLU(),
-            nn.Linear(64, 64),
+            nn.Linear(num_neuron, num_neuron),
             nn.ReLU(),
-            nn.Linear(64, num_outputs),
+            nn.Linear(num_neuron, num_neuron),
+            nn.ReLU(),
+            nn.Linear(num_neuron, num_outputs),
         )
         self.lr = lr
         self.criterion = nn.MSELoss()
@@ -240,16 +244,42 @@ def main():
     arg_dict = get_input_args()
     newdir = Directory(arg_dict["dir_path"])
     newset = DataSetFromList(newdir.get_relevant_files())
-    print(newset.inputs)
     train_conc = [10.0, 30.0, 50.0, 70.0, 90.0]
     test_conc = [20.0, 40.0, 60.0, 80.0, 100.0]
     train_data = newset.get_subset_from_list(newset.get_indices(train_conc))
     test_data = newset.get_subset_from_list(newset.get_indices(test_conc))
-    model = NeuralNetwork(train_data.get_output_size(), lr=0.001)
+    model = NeuralNetwork(train_data.get_output_size(), lr=0.0001, num_neuron=50)
     print(model.device)
-    model.train_network(train_data, test_data, 2000)
-    model.save_model()
+    model.train_network(train_data, test_data, 1500)
+    #model.save_model()
     get_dashboard(model)
+
+def run_several_samples():
+    """To get better results with the same hyperparameters the model is initialized several times."""
+    arg_dict = get_input_args()
+    newdir = Directory(arg_dict["dir_path"])
+    newset = DataSetFromList(newdir.get_relevant_files())
+    train_conc = [10.0, 30.0, 50.0, 70.0, 90.0]
+    test_conc = [20.0, 40.0, 60.0, 80.0, 100.0]
+    train_data = newset.get_subset_from_list(newset.get_indices(train_conc))
+    test_data = newset.get_subset_from_list(newset.get_indices(test_conc))
+    num_runs = 20
+    best_val_loss = float('inf')
+
+    for run in range(num_runs):
+        
+        model = NeuralNetwork(train_data.get_output_size(), num_neuron=50, lr=0.001)
+
+        model.train_network(train_data, test_data, 3000)
+        
+        val_loss = model.val_losses[-1]
+        print(f"Validation Loss for run {run+1}: {val_loss:.2e}")
+        
+        # Save the model if it has the best validation loss
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            model.save_model()
+    print(f"Best validation loss: {best_val_loss:.2e}")
 
 
 
