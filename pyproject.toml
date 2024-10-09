@@ -1,14 +1,20 @@
+[project]
+name = "conc2rdf"
+version = "0.2.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+
 [tool.pylint]
-disable = ""  # Empty disables nothing, thus enabling all checks.
+disable = "" # Empty disables nothing, thus enabling all checks.
 
 # Enable optional reports
-reports = true  # If you want pylint to generate reports after the checks.
+reports = true # If you want pylint to generate reports after the checks.
 
 # List all enabled error, warning, refactor, and convention messages
-enable = [
-    "all"
-]
+enable = ["all"]
 
 [tool.ruff.lint]
 select = ["ALL"]
-
