@@ -22,9 +22,9 @@ def main():
     test_conc = [20.0, 40.0, 60.0, 80.0, 100.0]
     train_data = newset.get_subset_from_list(newset.get_indices(train_conc))
     test_data = newset.get_subset_from_list(newset.get_indices(test_conc))
-    model = NeuralNetwork(train_data.get_output_size(), lr=0.0001, num_neuron=50)
+    model = NeuralNetwork(train_data.get_output_size(), lr=0.0001, num_neurons=[50])
     print(model.device)
-    model.train_network(train_data, test_data, 1500)
+    model.train_network(train_data, test_data, 1500, print_progress=True)
     model.save_model()
 
 

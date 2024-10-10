@@ -1,22 +1,26 @@
+
 import torch
 import torch.optim as optim
 from torch import nn
+import tqdm
 
 from .rdf_dataset import RdfDataSet
 
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, num_outputs: int, lr=0.001, num_neuron=64):
+    def __init__(self, num_outputs: int, lr=0.001, num_neurons=[50]):
         super().__init__()
-        self.network = nn.Sequential(
-            nn.Linear(1, num_neuron),
-            nn.ReLU(),
-            nn.Linear(num_neuron, num_neuron),
-            nn.ReLU(),
-            nn.Linear(num_neuron, num_neuron),
-            nn.ReLU(),
-            nn.Linear(num_neuron, num_outputs),
-        )
+        input_size = 1
+        layers = []
+        for i in num_neurons:
+            layers.append(nn.Linear(input_size, i))
+            layers.append(nn.ReLU())
+            input_size = i
+        
+        layers.append(nn.Linear(input_size, num_outputs))
+        self.network = nn.Sequential(*layers)
+
+
         self.lr = lr
         self.criterion = nn.MSELoss()
         self.optimizer = optim.Adam(self.parameters(), lr=self.lr)
@@ -35,7 +39,7 @@ class NeuralNetwork(nn.Module):
         print_progress=False,
     ):
         # TODO insert tqdm bar
-        for epoch in range(epochs):
+        for epoch in tqdm(range(epochs)):
             avg_loss = 0.0
             avg_val_loss = 0.0
 
@@ -65,8 +69,8 @@ class NeuralNetwork(nn.Module):
             if print_progress:
                 if (epoch + 1) % 10 == 0:
                     print(
-                        f"Epoch [{epoch+1}/{epochs}], Loss: {avg_loss:.6f}, Validation Loss: {avg_val_loss:.6f}"
+                        f"\r Epoch [{epoch+1}/{epochs}], Loss: {avg_loss:.6f}, Validation Loss: {avg_val_loss:.6f}",
+                        end=""
                     )
-
     def save_model(self):
         torch.save(self, "model.pth")

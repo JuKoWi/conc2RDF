@@ -27,9 +27,9 @@ def main():
     best_val_loss = float("inf")
 
     for run in range(num_runs):
-        model = NeuralNetwork(train_data.get_output_size(), num_neuron=50, lr=0.001)
+        model = NeuralNetwork(train_data.get_output_size(), num_neurons=[50, 50, 50], lr=0.001)
 
-        model.train_network(train_data, test_data, 3000)
+        model.train_network(train_data, test_data, 5000)
 
         val_loss = model.val_losses[-1]
         print(f"Validation Loss for run {run+1}: {val_loss:.2e}")
