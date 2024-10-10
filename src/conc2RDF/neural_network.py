@@ -38,7 +38,6 @@ class NeuralNetwork(nn.Module):
         epochs=1000,
         print_progress=False,
     ):
-        # TODO insert tqdm bar
         for epoch in tqdm(range(epochs)):
             avg_loss = 0.0
             avg_val_loss = 0.0

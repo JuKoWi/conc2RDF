@@ -14,8 +14,7 @@ from conc2RDF import (
 )
 
 
-def multi():
-    """To get better results with the same hyperparameters the model is initialized several times."""
+def simple():
     args = parse_the_arg()
     newdir = Directory(args.p)
     newset = DataSetFromList(newdir.get_relevant_files())
@@ -23,22 +22,7 @@ def multi():
     test_conc = [20.0, 40.0, 60.0, 80.0, 100.0]
     train_data = newset.get_subset_from_list(newset.get_indices(train_conc))
     test_data = newset.get_subset_from_list(newset.get_indices(test_conc))
-    num_runs = 20
-    best_val_loss = float("inf")
-
-    for run in range(num_runs):
-        model = NeuralNetwork(train_data.get_output_size(), num_neurons=[50, 50, 50], lr=0.001)
-
-        model.train_network(train_data, test_data, 5000)
-
-        val_loss = model.val_losses[-1]
-        print(f"Validation Loss for run {run+1}: {val_loss:.2e}")
-
-        # Save the model if it has the best validation loss
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            model.save_model()
-    print(f"Best validation loss: {best_val_loss:.2e}")
-
-
-
+    model = NeuralNetwork(train_data.get_output_size(), lr=0.0001, num_neurons=[50])
+    print(model.device)
+    model.train_network(train_data, test_data, 1500, print_progress=True)
+    model.save_model()
