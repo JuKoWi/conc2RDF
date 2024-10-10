@@ -1,0 +1,26 @@
+
+[neural_network]
+#parameters necessary for NN setup
+
+    num_neurons = [50, 50]
+    loss_function = "MSELoss"
+    [optimizer]
+        
+        type = "Adam"
+        learning_rate = "0.001"
+    
+
+[dataset]
+#parameters necessary to load dataset
+
+    filelist = false
+    dirpath = "/largedisk/julius_w/Development/conc2RDF/training_data"
+
+[learning]
+    epochs = 3000
+    print_progress = true
+    train_selection = [10.0, 30.0, 50.0, 70.0, 90.0] # ensure that data for these concentrations is available
+    test_selection = [20.0, 40.0, 60.0, 80.0, 100.0] 
+
+
+
