@@ -2,7 +2,7 @@
 import torch
 import torch.optim as optim
 from torch import nn
-import tqdm
+from tqdm import tqdm
 
 from .rdf_dataset import RdfDataSet
 
