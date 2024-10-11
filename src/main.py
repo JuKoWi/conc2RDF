@@ -1,9 +1,6 @@
 from conc2RDF import (
-    DataSetFromList,
-    Directory,
-    NeuralNetwork,
-    get_input_args,
-    parse_the_arg
+    parse_the_arg,
+    do_the_job
 )
 from simple import simple
 from run_several_samples import multi
@@ -14,6 +11,11 @@ def main():
         multi()
     elif args.s:
         simple()
+    elif args.i is not None:
+        if args.i == "default":
+            do_the_job()
+        else:
+            do_the_job(args.i)
     if not any(vars(args).values()):
         print(
             "No flags were provided. Please provide at least one flag.\n",

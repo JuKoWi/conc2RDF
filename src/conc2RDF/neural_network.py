@@ -8,11 +8,12 @@ from .rdf_dataset import RdfDataSet
 
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, num_outputs: int, lr=0.001, num_neurons=[50]):
+    def __init__(self, num_outputs=190, lr=0.001, num_neurons=[50]):
         super().__init__()
+        self.num_neurons = num_neurons
         input_size = 1
         layers = []
-        for i in num_neurons:
+        for i in self.num_neurons:
             layers.append(nn.Linear(input_size, i))
             layers.append(nn.ReLU())
             input_size = i
