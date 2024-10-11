@@ -28,6 +28,11 @@ class NeuralNetwork(nn.Module):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.train_losses = []
         self.val_losses = []
+        self.rvalues = None
+        """TODO find better solution for the following problem:
+        although not really a part of the NN, the rvalues have to be stored in the NN,
+        to make sure, that by just loading the NN into the Ananlyzer class the result-RDF can be plotted.
+        This impairs the single responsibility principle"""
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.network(x)
@@ -39,7 +44,9 @@ class NeuralNetwork(nn.Module):
         epochs=1000,
         print_progress=False,
     ):
-        for epoch in tqdm(range(epochs)):
+        self.rvalues = train_data.rvalues
+        progress_bar = tqdm(range(epochs), leave=True)
+        for epoch in progress_bar:
             avg_loss = 0.0
             avg_val_loss = 0.0
 
@@ -68,9 +75,8 @@ class NeuralNetwork(nn.Module):
 
             if print_progress:
                 if (epoch + 1) % 10 == 0:
-                    print(
-                        f"\r Epoch [{epoch+1}/{epochs}], Loss: {avg_loss:.6f}, Validation Loss: {avg_val_loss:.6f}",
-                        end=""
+                    progress_bar.set_description(
+                f"Epoch [{epoch+1}/{epochs}], Loss: {avg_loss:.6f}, Val Loss: {avg_val_loss:.6f}"
                     )
     def save_model(self):
         torch.save(self, "model.pth")

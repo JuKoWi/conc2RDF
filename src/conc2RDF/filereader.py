@@ -97,6 +97,14 @@ class DataSetFromList(RdfDataSet):
             file.get_percentage()
             file.read_table()
             self.add_item(file.input, file.output)
+            self.rvalues = file.rvalues 
+            """TODO The line above is only a quick and dirty solution.
+            The rvalues have to be stored in the RdfDataSet class but the current implementation has two downsides:
+            On one hand it does not check if the rvalues for all samples of the dataset are consistent.
+            On the other hand, to add the feature that datasets that store the rvalue not in every rdf file but in a seperate file can be used,
+            the code has to be rewritten (not good extendability)
+            """
+            
 
 
 class Directory:

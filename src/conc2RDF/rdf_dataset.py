@@ -10,6 +10,7 @@ class RdfDataSet(Dataset):
             raise ValueError("Inputs and outputs must have the same length.")
         self.inputs = inputs
         self.outputs = outputs
+        self.rvalues = None
 
     def get_indices(self, conc_list):
         new_list = []
@@ -21,7 +22,9 @@ class RdfDataSet(Dataset):
     def get_subset_from_list(self, idx_list):
         output_list = [self.outputs[i] for i in idx_list]
         input_list = [self.inputs[i] for i in idx_list]
-        return RdfDataSet(input_list, output_list)
+        subset = RdfDataSet(input_list, output_list)
+        subset.rvalues = self.rvalues
+        return subset
 
     def get_output_size(self):
         return len(self.outputs[0])

@@ -39,14 +39,4 @@ def merge_dictionaries(default_dict, custom_dict):
     return merged_dict
 
 
-# TODO make dashboard class for plot of losses and RDF plots
-def get_dashboard(network: NeuralNetwork):
-    """plot"""
-    fig, axs = plt.subplots(2, 1)
-    axs[0].plot(network.train_losses, "o", ms=3, label="trainig")
-    axs[1].plot(network.val_losses, "o", ms=3, label="testing")
-    axs[0].semilogy()
-    axs[1].semilogy()
-    axs[0].legend()
-    axs[1].legend()
-    plt.show()
+

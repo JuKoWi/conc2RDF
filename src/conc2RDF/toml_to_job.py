@@ -29,7 +29,7 @@ def do_the_job(toml_path=True):
         job_toml = {}
     else:
         job_toml = ConfigLoader(toml_path).config
-    default_toml = ConfigLoader("/largedisk/julius_w/Development/conc2RDF/src/conc2RDF/defaulttoml.toml").config # TODO change path
+    default_toml = ConfigLoader("./conc2RDF/defaulttoml.toml").config # TODO change path
     job_toml = merge_dictionaries(default_toml, job_toml)
 
     job_dir = Directory(job_toml["dataset"]["dirpath"])
@@ -40,10 +40,12 @@ def do_the_job(toml_path=True):
     test_data = jobset.get_subset_from_list(jobset.get_indices(test_conc))
     num_runs = job_toml["learning"]["num_runs"]
 
+    epochs = job_toml["learning"]["epochs"]
+    print_progress = job_toml["learning"]["print_progress"]
     best_val_loss = float("inf")
     for run in range(num_runs):
         model = NNFromToml(train_data.get_output_size(), job_toml)
-        model.train_network(train_data, test_data, job_toml["learning"]["epochs"])
+        model.train_network(train_data, test_data, epochs=epochs, print_progress=print_progress)
         val_loss = model.val_losses[-1]
         print(f"Validation Loss for run {run+1}: {val_loss:.2e}")
         # Save the model if it has the best validation loss

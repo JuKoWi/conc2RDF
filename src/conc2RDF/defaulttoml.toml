@@ -4,7 +4,7 @@
 
     num_neurons = [50, 50]
     loss_function = "MSELoss"
-    [optimizer] #if default optimizer or lr is used type and lr must be provided
+    [optimizer]
         
         type = "Adam"
         learning_rate = 0.001
@@ -19,7 +19,7 @@
 [learning]
     epochs = 3000
     print_progress = true
-    train_selection = [10.0, 30.0, 50.0, 70.0, 90.0] # ensure that data for these concentrations is available
+    train_selection = [10.0, 30.0, 50.0, 70.0, 90.0] # ensure that data for these concentrations is available!
     test_selection = [20.0, 40.0, 60.0, 80.0, 100.0] 
     num_runs = 1
 

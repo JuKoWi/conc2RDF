@@ -4,5 +4,6 @@ from .utils import *
 from .filereader import DataSetFromList, FromXVGFile, Directory
 from .flag_reader import parse_the_arg
 from .toml_to_job import do_the_job
+from .analyzer import Analyzer
 
 
