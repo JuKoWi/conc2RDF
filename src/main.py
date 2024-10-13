@@ -1,9 +1,15 @@
 from conc2RDF import (
     parse_the_arg,
-    do_the_job
+    do_the_job,
+    Analyzer,
+    Directory,
+    DataSetFromList
+
 )
 from simple import simple
 from run_several_samples import multi
+
+import torch
 
 def main():
     args = parse_the_arg()
@@ -16,6 +22,19 @@ def main():
             do_the_job()
         else:
             do_the_job(args.i)
+    elif args.ad:
+        newdir = Directory(args.ad)
+        newset = DataSetFromList(newdir.get_relevant_files())
+        model = torch.load("./model.pth", weights_only=False)
+        my_analyzer = Analyzer(model, newset)
+        my_analyzer.get_dashboard()
+    elif args.ap:
+        newdir = Directory(args.ap)
+        newset = DataSetFromList(newdir.get_relevant_files())
+        model = torch.load("./model.pth", weights_only=False)
+        my_analyzer = Analyzer(model, newset)
+        my_analyzer.get_dashboard()
+        
     if not any(vars(args).values()):
         print(
             "No flags were provided. Please provide at least one flag.\n",

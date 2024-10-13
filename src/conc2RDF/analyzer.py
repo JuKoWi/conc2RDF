@@ -53,3 +53,4 @@ class Analyzer:
                 plt.legend()
                 plt.show()
 
+
