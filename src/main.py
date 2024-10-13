@@ -33,7 +33,7 @@ def main():
         newset = DataSetFromList(newdir.get_relevant_files())
         model = torch.load("./model.pth", weights_only=False)
         my_analyzer = Analyzer(model, newset)
-        my_analyzer.get_dashboard()
+        my_analyzer.show_predictions()
         
     if not any(vars(args).values()):
         print(

@@ -26,7 +26,7 @@ class Analyzer:
         axs[1].semilogy()
         axs[0].legend()
         axs[1].legend()
-        plt.show()
+        plt.savefig("training_plot.png")
     def show_errors(self):
         """plot errors of the result"""
         self.model.eval()
@@ -39,7 +39,8 @@ class Analyzer:
                 plt.plot(self.rvalues, SE, "o", ms=3, label=f"{X.item()} square error")
                 plt.plot(self.rvalues, AE, "o", ms=3, label=f"{X.item()} absolute error")
                 plt.legend()
-                plt.show()
+                plt.savefig("errorplot.png")
+                plt.close()
     
     def show_predictions(self):
         """shows the prediction rdf for different concentrations"""
@@ -51,6 +52,7 @@ class Analyzer:
                 plt.plot(self.rvalues, pred, "o", ms=3, label=f"{X.item()}")
                 plt.plot(self.rvalues, self.outputs[i])
                 plt.legend()
-                plt.show()
+                plt.savefig(f"model_predictions_{X.item()}.png")
+                plt.close()
 
 
