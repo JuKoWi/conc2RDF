@@ -1,32 +1,51 @@
 from conc2RDF import (
     parse_the_arg,
-    do_the_job,
     Analyzer,
     Directory,
-    DataSetFromList
-
+    DataSetFromList,
+    load_toml,
+    NeuralNetwork
 )
-from simple import simple
-from run_several_samples import multi
 
 import torch
 
 def main():
     args = parse_the_arg()
-    if args.m:
-        multi()
-    elif args.s:
-        simple()
-    elif args.i is not None:
-        if args.i == "default":
-            do_the_job()
-        else:
-            do_the_job(args.i)
+    if args.i is not None:
+        filepath = args.i 
+        config = load_toml(filepath)
+        job_dir = Directory(config.data.dirpath)
+        jobset = DataSetFromList(job_dir.get_relevant_files())
+        train_conc = config.learn.train_selection
+        test_conc = config.learn.test_selection
+        train_data = jobset.get_subset_from_list(jobset.get_indices(train_conc))
+        test_data = jobset.get_subset_from_list(jobset.get_indices(test_conc))
+        num_runs = config.learn.num_runs
+
+        best_val_loss = float("inf")
+        for run in range(num_runs):
+            model = NeuralNetwork(
+                train_data.get_output_size(),
+                config.nn.optimizer.learning_rate,
+                config.nn.num_neurons,
+                )
+            model.train_network(
+                train_data,
+                test_data,
+                epochs=config.learn.epochs,
+                print_progress=config.learn.print,
+            )
+            val_loss = model.val_losses[-1]
+            print(f"Validation Loss for run {run+1}: {val_loss:.2e}")
+            # Save the model if it has the best validation loss
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                model.save_model()
+        print(f"Best validation loss: {best_val_loss:.2e}")
+        
     elif args.ad:
-        newdir = Directory(args.ad)
-        newset = DataSetFromList(newdir.get_relevant_files())
         model = torch.load("./model.pth", weights_only=False)
-        my_analyzer = Analyzer(model, newset)
+        my_analyzer = Analyzer(model)
         my_analyzer.get_dashboard()
     elif args.ap:
         newdir = Directory(args.ap)
@@ -42,6 +61,8 @@ def main():
             "\t-p <path> to provide the path to a data containing directory\n",
             "\t-m to run multi initial conditions job with default settings; -p flag necessary\n",
             "\t-s to run single job with default settings; -p flag necessary"
+            "\t-ap <path/to/dataset> to get predicitions for model.pth"
+            "\t-ad <apth/to/dataset> to get dashboard for last training run of model.pth"
         )
 
 

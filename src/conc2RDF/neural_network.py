@@ -1,10 +1,29 @@
-
 import torch
 import torch.optim as optim
 from torch import nn
 from tqdm import tqdm
 
 from .rdf_dataset import RdfDataSet
+
+
+class EarlyStoppingCallback:
+    def __init__(self, patience=10, min_delta=0.001):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.wait = 0
+        self.best_loss = float("inf")
+
+    def is_early_stop(self, current_loss: float, epoch: int):
+        if current_loss < self.best_loss - self.min_delta:
+            self.best_loss = current_loss
+            self.wait = 0
+            return False
+        else:
+            self.wait += 1
+            if self.wait >= self.patience:
+                stop_training = True
+                print(f"Early stopping triggered at epoch {epoch}")
+                return True
 
 
 class NeuralNetwork(nn.Module):
@@ -17,10 +36,21 @@ class NeuralNetwork(nn.Module):
             layers.append(nn.Linear(input_size, i))
             layers.append(nn.ReLU())
             input_size = i
-        
+
         layers.append(nn.Linear(input_size, num_outputs))
         self.network = nn.Sequential(*layers)
 
+        """For callbacks:
+        TODO: Should I rather inlcude the possibility for callbacks in the NeuralNetwork 
+        parent class or in the NNfromToml subclass? By defining the train_network() method 
+        differently for NNFromToml I could use polymorphism
+        """
+        self.scheduler = None
+        self.early_stopping = False
+        self.early_stopping_patience = None
+        self.early_stopping_min_delta = None
+        self.early_stopping_counter = 0
+        self.best_val_loss = float("inf")
 
         self.lr = lr
         self.criterion = nn.MSELoss()
@@ -43,9 +73,12 @@ class NeuralNetwork(nn.Module):
         test_data: RdfDataSet,
         epochs=1000,
         print_progress=False,
+        #config: GodObjectWithEverything
     ):
         self.rvalues = train_data.rvalues
         progress_bar = tqdm(range(epochs), leave=True)
+
+        #early_stopping_callback = EarlyStoppingCallback(patience=10, mi)
         for epoch in progress_bar:
             avg_loss = 0.0
             avg_val_loss = 0.0
@@ -76,7 +109,30 @@ class NeuralNetwork(nn.Module):
             if print_progress:
                 if (epoch + 1) % 10 == 0:
                     progress_bar.set_description(
-                f"Epoch [{epoch+1}/{epochs}], Loss: {avg_loss:.6f}, Val Loss: {avg_val_loss:.6f}"
+                        f"Epoch [{epoch+1}/{epochs}], Loss: {avg_loss:.6f}, Val Loss: {avg_val_loss:.6f}"
                     )
+
+            # if not self.scheduler == None:
+            #     self.scheduler.step(avg_val_loss)
+            # if self.early_stopping:
+            #     if self._check_early_stopping(avg_val_loss):
+            #         print(f"Early stopping at epoch {epoch + 1} due to no improvement.")
+            #         break
+
+            #if early_stopping_callback.is_early_stop():
+            #    break
+
     def save_model(self):
         torch.save(self, "model.pth")
+
+    def _check_early_stopping(self, current_val_loss):
+        """Check if early stopping should be triggered."""
+        if current_val_loss < self.best_val_loss - self.early_stopping_min_delta:
+            self.best_val_loss = current_val_loss
+            self.early_stopping_counter = 0
+        else:
+            self.early_stopping_counter += 1
+
+        if self.early_stopping_counter >= self.early_stopping_patience:
+            return True
+        return False
