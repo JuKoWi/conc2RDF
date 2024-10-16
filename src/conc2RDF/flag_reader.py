@@ -9,6 +9,7 @@ def parse_the_arg():
     parser.add_argument("-s", "--s", action="store_true", help="s for single: Run the simple.py script")
     parser.add_argument("-ad", action="store_true", help="get dashboard for last training run")
     parser.add_argument("-ap", help="show the predictions")
+    parser.add_argument("-ae", help="show the errors")
     args = parser.parse_args()
     return args
 

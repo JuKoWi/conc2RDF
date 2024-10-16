@@ -23,6 +23,7 @@ def load_toml(toml_filename):
     config_dict = merge_dictionaries(default_dict, config_dict)
 
     scheduler = Scheduler(
+        config_dict["learning"]["scheduler"]["is_on"],
         config_dict["learning"]["scheduler"]["type"],
         config_dict["learning"]["scheduler"]["mode"],
         config_dict["learning"]["scheduler"]["factor"],
@@ -34,9 +35,9 @@ def load_toml(toml_filename):
         config_dict["neural_network"]["optimizer"]["learning_rate"],
     )
     stop = EarlyStopping(
+        config_dict["learning"]["early_stopping"]["is_on"],
         config_dict["learning"]["early_stopping"]["patience"],
         config_dict["learning"]["early_stopping"]["min_delta"],
-        config_dict["learning"]["early_stopping"]["counter"],
     )
 
     nn = NeuralNetwork(

@@ -21,9 +21,10 @@ class Analyzer:
     # TODO make dashboard class for plot of losses and RDF plots
     def get_dashboard(self):
         """plot training process information"""
+        val_losses_np = [loss.cpu().numpy() for loss in self.model.val_losses]
         fig, axs = plt.subplots(2, 1)
         axs[0].plot(self.model.train_losses, "o", ms=3, label="trainig")
-        axs[1].plot(self.model.val_losses, "o", ms=3, label="testing")
+        axs[1].plot(val_losses_np, "o", ms=3, label="testing")
         axs[0].semilogy()
         axs[1].semilogy()
         axs[0].legend()
@@ -32,35 +33,38 @@ class Analyzer:
 
     def show_errors(self, dataset: RdfDataSet):
         # TODO: mean like in paper
-        """plot errors of the result"""
+        """Plot errors of the resultfor different concentrations."""
         self.inputs = dataset.inputs
         self.outputs = dataset.outputs
         self.model.eval()
+        MSE = [None] * len(self.inputs)
+        MAE = [None] * len(self.inputs)
         with torch.no_grad():
             for i in range(len(self.inputs)):
-                X = self.inputs[i]
+                X = self.inputs[i].to(self.model.device)
                 pred = self.model(X)
-                SE = (pred - self.outputs[i]) ** 2
-                AE = torch.abs(pred - self.outputs[i])
-                plt.plot(self.rvalues, SE, "o", ms=3, label=f"{X.item()} square error")
-                plt.plot(
-                    self.rvalues, AE, "o", ms=3, label=f"{X.item()} absolute error"
-                )
-                plt.legend()
-                plt.savefig("errorplot.png")
-                plt.close()
+                MSE[i] = torch.mean((pred - self.outputs[i].to(self.model.device)) ** 2).cpu().numpy()
+                MAE[i] = torch.mean(
+                    torch.abs(pred - self.outputs[i].to(self.model.device))
+                ).cpu().numpy()
+            inputs_np = [input.cpu().numpy() for input in self.inputs]
+            plt.plot(inputs_np, MSE, "o", ms=3, label="mean square error")
+            plt.plot(inputs_np, MAE, "o", ms=3, label="mean absolute error")
+            plt.legend()
+            plt.savefig("errorplot.png")
+            plt.close()
 
     def show_predictions(self, dataset: RdfDataSet):
-        """shows the prediction rdf for different concentrations"""
+        """Show the prediction rdf for different concentrations."""
         self.inputs = dataset.inputs
         self.outputs = dataset.outputs
         self.model.eval()
         with torch.no_grad():
             for i in range(len(self.inputs)):
-                X = self.inputs[i]
+                X = self.inputs[i].to(self.model.device)
                 pred = self.model(X)
-                plt.plot(self.rvalues, pred, "o", ms=3, label=f"{X.item()}")
-                plt.plot(self.rvalues, self.outputs[i])
+                plt.plot(self.rvalues, pred.cpu(), "o", ms=3, label=f"{X.item()}")
+                plt.plot(self.rvalues, self.outputs[i].to(self.model.device).cpu())
                 plt.legend()
                 plt.savefig(f"model_predictions_{X.item()}.png")
                 plt.close()

@@ -4,6 +4,7 @@ from typing import List
 
 @dataclass
 class Scheduler:
+    is_on: bool
     type: str
     mode: str
     factor: float
@@ -17,9 +18,9 @@ class Optimizer:
 
 @dataclass
 class EarlyStopping:
+    is_on: bool
     patience: int
     min_delta: float
-    counter: int
 
 
 

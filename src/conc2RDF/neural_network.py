@@ -4,26 +4,7 @@ from torch import nn
 from tqdm import tqdm
 
 from .rdf_dataset import RdfDataSet
-
-
-class EarlyStoppingCallback:
-    def __init__(self, patience=10, min_delta=0.001):
-        self.patience = patience
-        self.min_delta = min_delta
-        self.wait = 0
-        self.best_loss = float("inf")
-
-    def is_early_stop(self, current_loss: float, epoch: int):
-        if current_loss < self.best_loss - self.min_delta:
-            self.best_loss = current_loss
-            self.wait = 0
-            return False
-        else:
-            self.wait += 1
-            if self.wait >= self.patience:
-                stop_training = True
-                print(f"Early stopping triggered at epoch {epoch}")
-                return True
+from .callbacks import *
 
 
 class NeuralNetwork(nn.Module):
@@ -40,29 +21,19 @@ class NeuralNetwork(nn.Module):
         layers.append(nn.Linear(input_size, num_outputs))
         self.network = nn.Sequential(*layers)
 
-        """For callbacks:
-        TODO: Should I rather inlcude the possibility for callbacks in the NeuralNetwork 
-        parent class or in the NNfromToml subclass? By defining the train_network() method 
-        differently for NNFromToml I could use polymorphism
-        """
-        self.scheduler = None
-        self.early_stopping = False
-        self.early_stopping_patience = None
-        self.early_stopping_min_delta = None
-        self.early_stopping_counter = 0
-        self.best_val_loss = float("inf")
-
         self.lr = lr
         self.criterion = nn.MSELoss()
         self.optimizer = optim.Adam(self.parameters(), lr=self.lr)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.train_losses = []
         self.val_losses = []
-        self.rvalues = None
+        #self.rvalues = None
         """TODO find better solution for the following problem:
         although not really a part of the NN, the rvalues have to be stored in the NN,
         to make sure, that by just loading the NN into the Ananlyzer class the result-RDF can be plotted.
         This impairs the single responsibility principle"""
+
+        self.to(self.device)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.network(x)
@@ -73,12 +44,12 @@ class NeuralNetwork(nn.Module):
         test_data: RdfDataSet,
         epochs=1000,
         print_progress=False,
-        #config: GodObjectWithEverything
+        callbacks: list[Callbacks] = None,
     ):
         self.rvalues = train_data.rvalues
-        progress_bar = tqdm(range(epochs), leave=True)
+        self.callbacks = callbacks or []
 
-        #early_stopping_callback = EarlyStoppingCallback(patience=10, mi)
+        progress_bar = tqdm(range(epochs), leave=True)
         for epoch in progress_bar:
             avg_loss = 0.0
             avg_val_loss = 0.0
@@ -86,6 +57,8 @@ class NeuralNetwork(nn.Module):
             """train part"""
             for x, y_ref in train_data:
                 self.train()
+                x = x.to(self.device)
+                y_ref = y_ref.to(self.device)
                 y_pred = self(x)
                 loss = self.criterion(y_pred, y_ref)
                 loss.backward()
@@ -98,6 +71,8 @@ class NeuralNetwork(nn.Module):
             self.eval()
             with torch.no_grad():
                 for x, y_ref in test_data:
+                    x = x.to(self.device)
+                    y_ref = y_ref.to(self.device)
                     y_pred = self(x)
                     avg_val_loss += self.criterion(y_pred, y_ref)
 
@@ -108,19 +83,14 @@ class NeuralNetwork(nn.Module):
 
             if print_progress:
                 if (epoch + 1) % 10 == 0:
+                    current_lr = self.optimizer.param_groups[0]["lr"]
                     progress_bar.set_description(
-                        f"Epoch [{epoch+1}/{epochs}], Loss: {avg_loss:.6f}, Val Loss: {avg_val_loss:.6f}"
+                        f"Epoch [{epoch+1}/{epochs}], Loss: {avg_loss:.6f}, Val Loss: {avg_val_loss:.6f}, lr: {current_lr:.6e}"
                     )
-
-            # if not self.scheduler == None:
-            #     self.scheduler.step(avg_val_loss)
-            # if self.early_stopping:
-            #     if self._check_early_stopping(avg_val_loss):
-            #         print(f"Early stopping at epoch {epoch + 1} due to no improvement.")
-            #         break
-
-            #if early_stopping_callback.is_early_stop():
-            #    break
+            for callback in self.callbacks:
+                callback.on_epoch_end(self.val_losses[-1])
+            if any([callback.stop_training for callback in self.callbacks]):
+                break
 
     def save_model(self):
         torch.save(self, "model.pth")
