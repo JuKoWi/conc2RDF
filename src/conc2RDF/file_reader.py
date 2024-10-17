@@ -1,3 +1,8 @@
+"""Read Data from files to create RdfDataSet instance.
+
+FileData to contain information from single file. Subclasses for different file formats
+with factory object.
+"""
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -16,6 +21,10 @@ class FileData(ABC):
     """
 
     def __init__(self, path):
+        """Characterize file by its path, name, input data, output data.
+
+        Number of bins/datapoints for rdf and the respective distance saved as well.
+        """
         self.path = Path(path)
         self.filename = self.path.name
         self.input = None
@@ -29,10 +38,12 @@ class FileData(ABC):
 
     @abstractmethod
     def get_percentage(self):
+        """Get the percentage /input for a file."""
         pass
 
     @abstractmethod
     def read_table(self):
+        """Get the rdf/output for a file."""
         pass
 
 
@@ -84,7 +95,7 @@ class FileFactory:
 
 
 class DataSetFromList(RdfDataSet):
-    """This subclass of RdfDataSet allows instances to be generated from a list if filepaths. It depends on the FromFile class"""
+    """This subclass of RdfDataSet allows instances to be generated from a list if filepaths. It depends on the FromFile class."""
 
     def __init__(self, pathlist):
         self.inputs = None

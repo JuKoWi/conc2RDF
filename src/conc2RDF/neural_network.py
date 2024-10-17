@@ -1,14 +1,34 @@
+"""Sets up NeuralNetwork with network specific parameters/architecture.
+
+The architecture can be given as a list of hidden layer neuron numbers.
+Training method that saves train and validation losses in lists.
+The train and test datasets are given as separate arguments and for callbacks a separate
+class is used.
+"""
+
 import torch
 import torch.optim as optim
 from torch import nn
 from tqdm import tqdm
 
-from .rdf_dataset import RdfDataSet
 from .callbacks import *
+from .rdf_dataset import RdfDataSet
 
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, num_outputs=190, lr=0.001, num_neurons=[50]):
+    """Class that is the actual Network.
+
+    num_neurons is list that describes architecture
+    lr is initial learning rate
+    criterion is lossfunction
+    train losses are loss in training set after each epoch
+    val losses are loss in test set after each epoch
+    """
+
+    def __init__(
+        self, num_outputs: int = 190, lr: float = 0.001, num_neurons: list[int] = [50]
+    ) -> None:
+        """Give the network properties that should be saved for later analysis."""
         super().__init__()
         self.num_neurons = num_neurons
         input_size = 1
@@ -27,15 +47,10 @@ class NeuralNetwork(nn.Module):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.train_losses = []
         self.val_losses = []
-        #self.rvalues = None
-        """TODO find better solution for the following problem:
-        although not really a part of the NN, the rvalues have to be stored in the NN,
-        to make sure, that by just loading the NN into the Ananlyzer class the result-RDF can be plotted.
-        This impairs the single responsibility principle"""
-
         self.to(self.device)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward propagation as defined in __init__."""
         return self.network(x)
 
     def train_network(
@@ -46,7 +61,14 @@ class NeuralNetwork(nn.Module):
         print_progress=False,
         callbacks: list[Callbacks] = None,
     ):
-        self.rvalues = train_data.rvalues
+        """Training Procedure.
+
+        For the given number of epochs backpropagation is performed with the train_data.
+        val_losses are recorded for test_data. For comparability both kinds of losses
+        are averaged over the samples from train_data / test_data.
+        callbacks from list are evaluated at end of each epoch.
+        """
+        self.rvalues = train_data.rvalues  # for later use in analyzer
         self.callbacks = callbacks or []
 
         progress_bar = tqdm(range(epochs), leave=True)
@@ -93,16 +115,5 @@ class NeuralNetwork(nn.Module):
                 break
 
     def save_model(self):
+        """Save the current state of the model. Used in the main.py."""
         torch.save(self, "model.pth")
-
-    def _check_early_stopping(self, current_val_loss):
-        """Check if early stopping should be triggered."""
-        if current_val_loss < self.best_val_loss - self.early_stopping_min_delta:
-            self.best_val_loss = current_val_loss
-            self.early_stopping_counter = 0
-        else:
-            self.early_stopping_counter += 1
-
-        if self.early_stopping_counter >= self.early_stopping_patience:
-            return True
-        return False

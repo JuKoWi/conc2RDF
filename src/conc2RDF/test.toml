@@ -22,8 +22,8 @@ num_runs = 20
 
 [learning.early_stopping]
 is_on = false
-patience = 5000
-min_delta = 0.00001
+patience = 500
+min_delta = 0.001
 
 [learning.scheduler]
 is_on = true
