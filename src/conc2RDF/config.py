@@ -1,3 +1,7 @@
+"""Setup dataclass to contain configuration/input-parameters.
+
+Paramters can come from toml file. The classes are nested and so are the toml files.
+"""
 from dataclasses import dataclass, field
 from typing import List
 
@@ -14,7 +18,7 @@ class Scheduler:
 @dataclass
 class Optimizer:
     type: str
-    learning_rate: float = 0.001  # Provide a default value
+    learning_rate: float = 0.001
 
 @dataclass
 class EarlyStopping:

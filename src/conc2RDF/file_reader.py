@@ -3,6 +3,7 @@
 FileData to contain information from single file. Subclasses for different file formats
 with factory object.
 """
+
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -47,7 +48,7 @@ class FileData(ABC):
         pass
 
 
-class FromXVGFile(FileData):
+class XVGFile(FileData):
     """Subclass to read and contain information fom xvg file."""
 
     def __init__(self, path):
@@ -63,7 +64,7 @@ class FromXVGFile(FileData):
             print("ERROR: Files do not match pattern")
 
     def read_table(self) -> None:
-        """Read the rdf data for one file to np.array -> tourch tensor"""
+        """Read the rdf data for one file to np.array -> torch tensor"""
         self.get_header()
         self.output = np.loadtxt(self.path, skiprows=self.header).T
         self.rvalues = self.output[0]
@@ -89,7 +90,7 @@ class FileFactory:
     def create_file_handler(path: str) -> FileData:
         pathpath = Path(path)
         if pathpath.suffix == ".xvg":
-            return FromXVGFile(path)
+            return XVGFile(path)
         else:
             raise ValueError(f"ERROR: Invalid file format for file {path}")
 
@@ -108,14 +109,13 @@ class DataSetFromList(RdfDataSet):
             file.get_percentage()
             file.read_table()
             self.add_item(file.input, file.output)
-            self.rvalues = file.rvalues 
+            self.rvalues = file.rvalues
             """TODO The line above is only a quick and dirty solution.
             The rvalues have to be stored in the RdfDataSet class but the current implementation has two downsides:
             On one hand it does not check if the rvalues for all samples of the dataset are consistent.
             On the other hand, to add the feature that datasets that store the rvalue not in every rdf file but in a seperate file can be used,
             the code has to be rewritten (not good extendability)
             """
-            
 
 
 class Directory:
@@ -130,9 +130,10 @@ class Directory:
         self.allfiles = os.listdir(path)
 
     def get_relevant_files(self):
+        """Should also work if there are non-data files in the directory."""
         for f in self.allfiles:
             if f.endswith(".xvg"):
-                newfile = FromXVGFile(self.pathpath / f)
+                newfile = XVGFile(self.pathpath / f)
                 if newfile.is_relevant():
                     self.filepaths.append(self.path + "/" + f)
         return self.filepaths

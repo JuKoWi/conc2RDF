@@ -28,21 +28,23 @@ class RdfDataSet(Dataset):
         return new_list
 
     def get_subset_from_list(self, idx_list: list[int]):
+        """Create new RdfDataSet instance for lsit of concentrations."""
         output_list = [self.outputs[i] for i in idx_list]
         input_list = [self.inputs[i] for i in idx_list]
         subset = RdfDataSet(input_list, output_list)
         subset.rvalues = self.rvalues
         return subset
 
-    def get_output_size(self):
+    def get_output_size(self) -> int:
         """Get number of bins in rdf. Important for setup of NN."""
         return len(self.outputs[0])
 
     def __getitem__(self, index):
-        """Find the specific """
+        """There must be a method called getitem for subclass of Dataset."""
         return self.inputs[index], self.outputs[index]
 
     def add_item(self, new_input, new_output):
+        """There must be only one rdf for every concentration."""
         if self.inputs is None:
             # Initialize inputs and outputs with the shape of the first input/output
             self.inputs = new_input

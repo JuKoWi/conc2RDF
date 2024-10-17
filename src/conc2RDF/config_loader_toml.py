@@ -1,3 +1,5 @@
+"""Create object of Config class from toml."""
+
 import tomllib
 
 from .config import (
@@ -12,14 +14,14 @@ from .config import (
 from .utils import merge_dictionaries
 
 
-
 def load_toml(toml_filename):
+    """Translation between the toml file and the Config class must be hardcoded."""
     config_dict = {}
     if toml_filename != "default":
         with open(toml_filename, "rb") as f:
-                config_dict = tomllib.load(f)
+            config_dict = tomllib.load(f)
     with open("conc2RDF/default_config.toml", "rb") as f:
-          default_dict = tomllib.load(f)
+        default_dict = tomllib.load(f)
     config_dict = merge_dictionaries(default_dict, config_dict)
 
     scheduler = Scheduler(
@@ -58,10 +60,9 @@ def load_toml(toml_filename):
         config_dict["dataset"]["filelist"],
         config_dict["dataset"]["dirpath"],
     )
-    
-    config = Config(
+
+    return Config(
         nn,
         data,
         learn,
     )
-    return config
