@@ -1,6 +1,6 @@
 [neural_network]
 # parameters necessary for NN setup
-num_neurons = [5]
+num_neurons = [50]
 loss_function = "MSELoss"
 
 [neural_network.optimizer]
@@ -30,5 +30,5 @@ is_on = true
 type = "ReduceLROnPlateau"
 mode = "min"
 factor = 0.5
-patience = 1000
+patience = 100
 verbose = true
