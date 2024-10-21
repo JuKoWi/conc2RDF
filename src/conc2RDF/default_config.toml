@@ -1,0 +1,35 @@
+[neural_network]
+# parameters necessary for NN setup
+num_neurons = [50, 50]
+loss_function = "MSELoss"
+
+[neural_network.optimizer]
+type = "Adam"
+learning_rate = 0.001
+
+
+[dataset]
+# parameters necessary to load dataset
+filelist = false
+dirpath = "/largedisk/julius_w/Development/conc2RDF/training_data"
+
+[learning]
+#parameters for learning process that are not included in NN setup
+epochs = 3000
+print_progress = true
+train_selection = [10.0, 30.0, 50.0, 70.0, 90.0]
+test_selection = [20.0, 40.0, 60.0, 80.0, 100.0]
+num_runs = 1
+
+[learning.early_stopping]
+is_on = true
+patience = 10
+min_delta = 0.001
+
+[learning.scheduler]
+is_on = true
+type = "ReduceLROnPlateau"
+mode = "min"
+factor = 0.1
+patience = 5
+verbose = true
