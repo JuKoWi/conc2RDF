@@ -1,10 +1,10 @@
 [neural_network]
 # parameters necessary for NN setup
 num_neurons = [50, 50]
-loss_function = "MSELoss"
+loss_function = "MSELoss" #for more options see https://pytorch.org/docs/stable/nn.html#loss-functions
 
 [neural_network.optimizer]
-type = "Adam"
+type = "Adam" #for more options see https://pytorch.org/docs/stable/optim.html
 learning_rate = 0.001
 
 
@@ -26,7 +26,7 @@ is_on = true
 patience = 10
 min_delta = 0.001
 
-[learning.scheduler]
+[learning.scheduler] #for types and parameters see https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
 is_on = true
 type = "ReduceLROnPlateau"
 mode = "min"
