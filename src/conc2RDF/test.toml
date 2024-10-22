@@ -11,7 +11,7 @@ learning_rate = 0.01
 [dataset]
 # parameters necessary to load dataset
 filelist = false
-dirpath = "/largedisk/julius_w/Development/conc2RDF/training_data"
+dirpath = "../training_data"
 
 [learning]
 epochs = 2500

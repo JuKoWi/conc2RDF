@@ -20,7 +20,7 @@ def load_toml(toml_filename):
     if toml_filename != "default":
         with open(toml_filename, "rb") as f:
             config_dict = tomllib.load(f)
-    with open("conc2RDF/default_config.toml", "rb") as f:
+    with open("./conc2RDF/default_config.toml", "rb") as f:
         default_dict = tomllib.load(f)
     config_dict = merge_dictionaries(default_dict, config_dict)
 
