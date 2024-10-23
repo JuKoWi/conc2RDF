@@ -97,9 +97,6 @@ def main():
         print(
             "No flags were provided. Please provide at least one flag.\n",
             "\t-i <filename.toml> to provide an input file that specifies the job (preferred)\n",
-            "\t-p <path> to provide the path to a data containing directory\n",
-            "\t-m to run multi initial conditions job with default settings; -p flag necessary\n",
-            "\t-s to run single job with default settings; -p flag necessary\n",
             "\t-ap <path/to/dataset> to get predicitions for model.pth\n",
             "\t-ad  to get dashboard for last training run of model.pth\n",
             "\t-ae <path/to/dataset> to get MSE and MAE for model.pth\n",
