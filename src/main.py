@@ -36,7 +36,9 @@ def main():
                 train_data.get_output_size(),
                 config.nn.num_neurons,
             )
-            optimizer = optim.Adam(model.parameters(), lr=config.nn.optimizer.learning_rate)
+            optimizer = optim.Adam(
+                model.parameters(), lr=config.nn.optimizer.learning_rate
+            )
             """Set up callbacks"""
             early_stop = Callbacks()
             if config.learn.stopping.is_on == True:

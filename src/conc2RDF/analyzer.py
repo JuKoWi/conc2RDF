@@ -25,9 +25,6 @@ class Analyzer:
 
     def __init__(self, model: NeuralNetwork):
         self.model: NeuralNetwork = model
-        self.inputs = None
-        self.ouputs = None
-        self.rvalues = model.rvalues
 
     def get_dashboard(self):
         """plot training process information"""
@@ -75,6 +72,7 @@ class Analyzer:
 
     def show_predictions(self, dataset: RdfDataSet):
         """Show the prediction rdf for different concentrations."""
+        self.rvalues = dataset.rvalues
         self.inputs = dataset.inputs
         self.outputs = dataset.outputs
         self.model.eval()

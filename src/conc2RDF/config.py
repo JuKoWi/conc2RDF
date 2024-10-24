@@ -31,7 +31,7 @@ class EarlyStopping:
 
 
 @dataclass
-class NeuralNetwork:
+class NetworkParms:
     num_neurons: List[int]
     loss_function: str
     optimizer: Optimizer = field(default_factory=Optimizer)
@@ -56,6 +56,6 @@ class Dataset:
 
 @dataclass
 class Config:
-    nn: NeuralNetwork
+    nn: NetworkParms
     data: Dataset
     learn: Learning

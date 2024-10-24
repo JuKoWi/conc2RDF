@@ -7,7 +7,7 @@ from .config import (
     Dataset,
     EarlyStopping,
     Learning,
-    NeuralNetwork,
+    NetworkParms,
     Optimizer,
     Scheduler,
 )
@@ -42,7 +42,7 @@ def load_toml(toml_filename):
         config_dict["learning"]["early_stopping"]["min_delta"],
     )
 
-    nn = NeuralNetwork(
+    nn = NetworkParms(
         config_dict["neural_network"]["num_neurons"],
         config_dict["neural_network"]["loss_function"],
         optimizer,
