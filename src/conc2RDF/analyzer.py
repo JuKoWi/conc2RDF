@@ -10,27 +10,38 @@ from .neural_network import NeuralNetwork
 from .rdf_dataset import RdfDataSet
 
 """TODO Find better solution to the following problem:
-The Analyzer can not be operated with the model alone but only in combinaton with the dataset.
+The Analyzer can not be operated with the model alone but only in combination with the dataset.
 One needs to make sure that in the loops in show_predictions() and show_errors() the
-prediction for the right concentration is plotted together with the data for the respective concentration
-Otherwise the graphs could turn out wrong if a filename in the dataset is slightly changed.
+prediction for the right concentration is plotted together with the data for the respective concentration.
+Otherwise, the graphs could turn out wrong if a filename in the dataset is slightly changed.
 """
 
 
 class Analyzer:
     """Create plots by loading the model.pth file for analysis.
 
-    Some plots need the path to the datasets as an additional argument.
+    Some plots require the path to the datasets as an additional argument.
+    
+    Attributes:
+        model (NeuralNetwork): The neural network model used for predictions.
     """
 
     def __init__(self, model: NeuralNetwork):
+        """Initialize the Analyzer with a neural network model.
+
+        Args:
+            model (NeuralNetwork): The neural network model for analysis.
+        """
         self.model: NeuralNetwork = model
 
     def get_dashboard(self):
-        """plot training process information"""
+        """Plot training process information.
+
+        This method creates a plot of training and validation losses and saves it as "training_plot.png".
+        """
         val_losses_np = [loss.cpu().numpy() for loss in self.model.val_losses]
         fig, axs = plt.subplots(2, 1)
-        axs[0].plot(self.model.train_losses, "o", ms=3, label="trainig")
+        axs[0].plot(self.model.train_losses, "o", ms=3, label="training")
         axs[1].plot(val_losses_np, "o", ms=3, label="testing")
         axs[0].set_ylabel("Training Loss")
         axs[1].set_ylabel("Validation Loss")
@@ -42,7 +53,14 @@ class Analyzer:
         plt.savefig("training_plot.png")
 
     def show_errors(self, dataset: RdfDataSet):
-        """Plot errors of the result for different concentrations."""
+        """Plot errors of the model predictions for different concentrations.
+
+        Args:
+            dataset (RdfDataSet): The dataset containing input and output data for error calculation.
+
+        This method calculates and plots the Mean Square Error (MSE) and Mean Absolute Error (MAE)
+        against the input concentrations and saves the plot as "errorplot.png".
+        """
         self.inputs = dataset.inputs
         self.outputs = dataset.outputs
         self.model.eval()
@@ -71,7 +89,14 @@ class Analyzer:
             plt.savefig("errorplot.png")
 
     def show_predictions(self, dataset: RdfDataSet):
-        """Show the prediction rdf for different concentrations."""
+        """Show the model predictions for different concentrations.
+
+        Args:
+            dataset (RdfDataSet): The dataset containing rvalues, inputs, and outputs for plotting.
+
+        This method generates plots for model predictions against actual outputs for each concentration
+        and saves them as separate files named "model_predictions_{X.item()}.png".
+        """
         self.rvalues = dataset.rvalues
         self.inputs = dataset.inputs
         self.outputs = dataset.outputs

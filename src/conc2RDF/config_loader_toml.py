@@ -15,7 +15,17 @@ from .utils import merge_dictionaries
 
 
 def load_toml(toml_filename):
-    """Translation between the toml file and the Config class must be hardcoded."""
+    """Load configuration from a TOML file and return a Config object.
+
+    The translation between the TOML file and the Config class must be hardcoded.
+    If a specific TOML file is not provided, default values are loaded from a default configuration file.
+
+    Args:
+        toml_filename (str): The path to the TOML configuration file. If set to "default", the default configuration will be loaded.
+
+    Returns:
+        Config: An instance of the Config class populated with the loaded configuration.
+    """
     config_dict = {}
     if toml_filename != "default":
         with open(toml_filename, "rb") as f:

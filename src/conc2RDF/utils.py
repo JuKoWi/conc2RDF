@@ -2,7 +2,20 @@
 
 
 def merge_dictionaries(default_dict: dict, custom_dict: dict) -> dict:
-    """Nested dictionaries must be merged to use default_config.toml for parameters not provided in custom .toml."""
+    """Merge two dictionaries, with values from the custom dictionary overriding defaults.
+
+    This function recursively merges two dictionaries. If a key exists in both dictionaries 
+    and its value is a dictionary in both, they are merged recursively. If the key exists only 
+    in the default dictionary, the default value is retained.
+
+    Args:
+        default_dict (dict): The dictionary containing default values.
+        custom_dict (dict): The dictionary containing custom values to override defaults.
+
+    Returns:
+        dict: A new dictionary with merged values from the default and custom dictionaries. 
+              The custom dictionary takes precedence for any overlapping keys.
+    """
     merged_dict = {}
 
     for key, default_value in default_dict.items():

@@ -16,19 +16,26 @@ from .rdf_dataset import RdfDataSet
 
 
 class NeuralNetwork(nn.Module):
-    """Class that is the actual Network.
+    """Class that represents the Neural Network.
 
-    num_neurons is list that describes architecture
-    lr is initial learning rate
-    criterion is lossfunction
-    train losses are loss in training set after each epoch
-    val losses are loss in test set after each epoch
+    Attributes:
+        num_neurons (list[int]): List that describes the architecture of the network.
+        lr (float): Initial learning rate.
+        criterion (nn.Module): Loss function used for training.
+        train_losses (list[float]): Loss in training set after each epoch.
+        val_losses (list[float]): Loss in validation set after each epoch.
     """
 
     def __init__(
         self, num_outputs: int = 190, lr: float = 0.001, num_neurons: list[int] = [50]
     ) -> None:
-        """Give the network properties that should be saved for later analysis."""
+        """Initialize the NeuralNetwork with given properties.
+
+        Args:
+            num_outputs (int): The number of output neurons.
+            lr (float): The initial learning rate.
+            num_neurons (list[int]): List of hidden layer neuron counts.
+        """
         super().__init__()
         self.num_neurons = num_neurons
         input_size = 1
@@ -49,7 +56,14 @@ class NeuralNetwork(nn.Module):
         self.to(self.device)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward propagation as defined in __init__."""
+        """Perform forward propagation through the network.
+
+        Args:
+            x (torch.Tensor): Input tensor for the forward pass.
+
+        Returns:
+            torch.Tensor: Output tensor from the network.
+        """
         return self.network(x)
 
     def train_network(
@@ -57,16 +71,25 @@ class NeuralNetwork(nn.Module):
         train_data: RdfDataSet,
         test_data: RdfDataSet,
         optimizer: optim,
-        epochs=1000,
-        print_progress=False,
+        epochs: int = 1000,
+        print_progress: bool = False,
         callbacks: list[Callbacks] = None,
     ):
-        """Training Procedure.
+        """Train the neural network.
 
-        For the given number of epochs backpropagation is performed with the train_data.
-        val_losses are recorded for test_data. For comparability both kinds of losses
-        are averaged over the samples from train_data / test_data.
-        callbacks from list are evaluated at end of each epoch.
+        For the given number of epochs, backpropagation is performed with the train_data.
+        Validation losses are recorded for test_data. Both kinds of losses are averaged
+        over the samples from train_data and test_data. Callbacks from the list are 
+        evaluated at the end of each epoch.
+
+        Args:
+            train_data (RdfDataSet): Dataset for training.
+            test_data (RdfDataSet): Dataset for testing/validation.
+            optimizer (optim.Optimizer): Optimizer to be used for training.
+            epochs (int): Number of training epochs.
+            print_progress (bool): Whether to print progress during training.
+            callbacks (list[Callbacks], optional): List of callback objects to be evaluated 
+                at the end of each epoch.
         """
         self.rvalues = train_data.rvalues  # for later use in analyzer
         self.callbacks = callbacks or []
@@ -77,7 +100,7 @@ class NeuralNetwork(nn.Module):
             avg_loss = 0.0
             avg_val_loss = 0.0
 
-            """train part"""
+            # Train part
             for x, y_ref in train_data:
                 self.train()
                 x = x.to(self.device)
@@ -90,7 +113,7 @@ class NeuralNetwork(nn.Module):
                 loss_value = loss.item()
                 avg_loss += loss_value
 
-            """test_part"""
+            # Test part
             self.eval()
             with torch.no_grad():
                 for x, y_ref in test_data:
@@ -116,5 +139,8 @@ class NeuralNetwork(nn.Module):
                 break
 
     def save_model(self):
-        """Save the current state of the model. Used in the main.py."""
+        """Save the current state of the model.
+
+        This method is used in the main.py file to save the model's state.
+        """
         torch.save(self, "model.pth")

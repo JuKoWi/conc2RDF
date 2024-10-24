@@ -15,10 +15,23 @@ from conc2RDF import (
 
 
 def main():
-    """Read arguments and perform trainig or analysis"""
+    """Read arguments and perform training or analysis.
+
+    This function parses command-line arguments, reads configuration settings,
+    performs training of a neural network, or analyzes results based on the provided flags.
+    It handles model training, early stopping, learning rate scheduling, and
+    generating relevant plots or metrics.
+
+    The following command-line arguments are supported:
+        -i: Input TOML configuration file for training.
+        -m: Flag to run the script with multiple samples.
+        -ad: Flag to get the dashboard for the last training run.
+        -ap: Path to the dataset to show predictions.
+        -ae: Path to the dataset to show errors.
+    """
     args = parse_the_arg()
     if args.i is not None:
-        """Read configuration, perform training and save best result."""
+        """Read configuration, perform training and save the best result."""
         filepath = args.i
         config = load_toml(filepath)
         job_dir = Directory(config.data.dirpath)
@@ -30,7 +43,7 @@ def main():
         num_runs = config.learn.num_runs
 
         best_val_loss = float("inf")
-        """Do several initializations of model for different start parameters."""
+        """Do several initializations of the model for different start parameters."""
         for run in range(num_runs):
             model = NeuralNetwork(
                 train_data.get_output_size(),
@@ -41,13 +54,13 @@ def main():
             )
             """Set up callbacks"""
             early_stop = Callbacks()
-            if config.learn.stopping.is_on == True:
+            if config.learn.stopping.is_on:
                 early_stop = EarlyStoppingCallback(
                     patience=config.learn.stopping.patience,
                     min_delta=config.learn.stopping.min_delta,
                 )
             scheduler = Callbacks()
-            if config.learn.scheduler.is_on is True:
+            if config.learn.scheduler.is_on:
                 scheduler_setup = getattr(
                     optim.lr_scheduler,
                     config.learn.scheduler.type,
@@ -70,8 +83,8 @@ def main():
                 optimizer=optimizer,
             )
             val_loss = model.val_losses[-1]
-            print(f"Validation Loss for run {run+1}: {val_loss:.2e}")
-            """ Save the model if it has the best validation loss"""
+            print(f"Validation Loss for run {run + 1}: {val_loss:.2e}")
+            """Save the model if it has the best validation loss"""
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
                 model.save_model()
@@ -89,7 +102,7 @@ def main():
         my_analyzer = Analyzer(model)
         my_analyzer.show_predictions(newset)
 
-    elif args.ae:  # uses dataset but just out of pure programming lazyness
+    elif args.ae:  # uses dataset but just out of pure programming laziness
         newdir = Directory(args.ae)
         newset = DataSetFromList(newdir.get_relevant_files())
         model = torch.load("./model.pth", weights_only=False)
@@ -100,8 +113,8 @@ def main():
         print(
             "No flags were provided. Please provide at least one flag.\n",
             "\t-i <filename.toml> to provide an input file that specifies the job (preferred)\n",
-            "\t-ap <path/to/dataset> to get predicitions for model.pth\n",
-            "\t-ad  to get dashboard for last training run of model.pth\n",
+            "\t-ap <path/to/dataset> to get predictions for model.pth\n",
+            "\t-ad to get dashboard for the last training run of model.pth\n",
             "\t-ae <path/to/dataset> to get MSE and MAE for model.pth\n",
         )
 
