@@ -30,13 +30,13 @@ def main():
         num_runs = config.learn.num_runs
 
         best_val_loss = float("inf")
-        """Do several initializations of model for differnt start parameters."""
+        """Do several initializations of model for different start parameters."""
         for run in range(num_runs):
             model = NeuralNetwork(
                 train_data.get_output_size(),
-                config.nn.optimizer.learning_rate,
                 config.nn.num_neurons,
             )
+            optimizer = optim.Adam(model.parameters(), lr=config.nn.optimizer.learning_rate)
             """Set up callbacks"""
             early_stop = Callbacks()
             if config.learn.stopping.is_on == True:
@@ -50,7 +50,7 @@ def main():
                     optim.lr_scheduler,
                     config.learn.scheduler.type,
                 )(
-                    model.optimizer,
+                    optimizer,
                     mode=config.learn.scheduler.mode,
                     factor=config.learn.scheduler.factor,
                     patience=config.learn.scheduler.patience,
@@ -65,6 +65,7 @@ def main():
                 epochs=config.learn.epochs,
                 print_progress=config.learn.print,
                 callbacks=[early_stop, scheduler],
+                optimizer=optimizer,
             )
             val_loss = model.val_losses[-1]
             print(f"Validation Loss for run {run+1}: {val_loss:.2e}")

@@ -43,7 +43,6 @@ class NeuralNetwork(nn.Module):
 
         self.lr = lr
         self.criterion = nn.MSELoss()
-        self.optimizer = optim.Adam(self.parameters(), lr=self.lr)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.train_losses = []
         self.val_losses = []
@@ -57,6 +56,7 @@ class NeuralNetwork(nn.Module):
         self,
         train_data: RdfDataSet,
         test_data: RdfDataSet,
+        optimizer: optim,
         epochs=1000,
         print_progress=False,
         callbacks: list[Callbacks] = None,
@@ -70,6 +70,7 @@ class NeuralNetwork(nn.Module):
         """
         self.rvalues = train_data.rvalues  # for later use in analyzer
         self.callbacks = callbacks or []
+        self.optimizer = optimizer
 
         progress_bar = tqdm(range(epochs), leave=True)
         for epoch in progress_bar:
