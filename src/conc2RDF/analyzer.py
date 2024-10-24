@@ -18,6 +18,11 @@ Otherwise the graphs could turn out wrong if a filename in the dataset is slight
 
 
 class Analyzer:
+    """Create plots by loading the model.pth file for analysis.
+
+    Some plots need the path to the datasets as an additional argument.
+    """
+
     def __init__(self, model: NeuralNetwork):
         self.model: NeuralNetwork = model
         self.inputs = None
@@ -30,6 +35,9 @@ class Analyzer:
         fig, axs = plt.subplots(2, 1)
         axs[0].plot(self.model.train_losses, "o", ms=3, label="trainig")
         axs[1].plot(val_losses_np, "o", ms=3, label="testing")
+        axs[0].set_ylabel("Training Loss")
+        axs[1].set_ylabel("Validation Loss")
+        axs[1].set_xlabel("$n_{\ Epoch}$")
         axs[0].semilogy()
         axs[1].semilogy()
         axs[0].legend()
@@ -60,6 +68,8 @@ class Analyzer:
             inputs_np = [input.cpu().numpy() for input in self.inputs]
             plt.plot(inputs_np, MSE, "o", ms=3, label="mean square error")
             plt.plot(inputs_np, MAE, "o", ms=3, label="mean absolute error")
+            plt.xlabel("c / 10 %")
+            plt.ylabel("Error")
             plt.legend()
             plt.savefig("errorplot.png")
 
@@ -75,5 +85,7 @@ class Analyzer:
                 plt.plot(self.rvalues, pred.cpu(), "o", ms=3, label=f"{X.item()}")
                 plt.plot(self.rvalues, self.outputs[i].to(self.model.device).cpu())
                 plt.legend()
+                plt.xlabel("r / $\\AA$")
+                plt.ylabel("g(r)")
                 plt.savefig(f"model_predictions_{X.item()}.png")
                 plt.close()
