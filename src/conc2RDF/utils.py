@@ -19,7 +19,7 @@ def merge_dictionaries(default_dict: dict, custom_dict: dict) -> dict:
     merged_dict = {}
 
     for key, default_value in default_dict.items():
-        custom_value = custom_dict.get(key, None)
+        custom_value = custom_dict.get(key, None) #no error raised when key no found
 
         if isinstance(default_value, dict) and isinstance(custom_value, dict):
             # Recursively merge nested dictionaries
@@ -27,5 +27,8 @@ def merge_dictionaries(default_dict: dict, custom_dict: dict) -> dict:
         else:
             # If no custom value, or custom value isn't a dictionary, use default or custom
             merged_dict[key] = custom_value if key in custom_dict else default_value
+    for key in custom_dict.keys():
+        if not key in merged_dict:
+            merged_dict[key] = custom_dict[key]
 
     return merged_dict
