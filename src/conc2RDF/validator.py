@@ -1,3 +1,4 @@
+import logging
 import os
 
 from .config import Config
@@ -56,9 +57,11 @@ def validate_input(config: Config):
     ]
     try:
         if not config.nn.optimizer.type in optim_list:
+            logging.error("Adam error")
             raise ValueError(
                 f"Choose an optimizer according to the pytorch documentation: {optim_list}"
             )
+
     except ValueError as e:
         print(f"\033[91mERROR: {e}\033[0m")
         exit()
@@ -83,7 +86,9 @@ def validate_input(config: Config):
     ]
     try:
         if not config.learn.scheduler.type in scheduler_list:
-            raise ValueError(f"Choose a sceduler from torch.optim.lr_scheduler {scheduler_list}")
+            raise ValueError(
+                f"Choose a scheduler from torch.optim.lr_scheduler {scheduler_list}"
+            )
     except ValueError as e:
         print(f"\033[91mERROR: {e}\033[0m")
         exit()

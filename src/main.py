@@ -1,3 +1,20 @@
+# conc2RDF
+# Copyright © 2024 Julius Willrich
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+
 import torch
 import torch.optim as optim
 
@@ -12,6 +29,7 @@ from conc2RDF import (
     load_toml,
     parse_the_arg,
     validate_input,
+    set_up_logging,
 )
 
 
@@ -30,6 +48,7 @@ def main():
         -ap: Path to the dataset to show predictions.
         -ae: Path to the dataset to show errors.
     """
+    set_up_logging()
     args = parse_the_arg()
     if args.i is not None:
         """Read configuration, perform training and save the best result."""
