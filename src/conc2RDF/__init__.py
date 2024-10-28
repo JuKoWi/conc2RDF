@@ -8,3 +8,4 @@ from .flag_reader import parse_the_arg
 from .neural_network import NeuralNetwork
 from .rdf_dataset import RdfDataSet
 from .utils import *
+from .validator import validate_input

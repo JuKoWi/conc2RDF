@@ -27,7 +27,7 @@ class NeuralNetwork(nn.Module):
     """
 
     def __init__(
-        self, num_outputs: int = 190, lr: float = 0.001, num_neurons: list[int] = [50]
+        self, num_outputs: int = 190, lr: float = 0.001, num_neurons: list[int] = []
     ) -> None:
         """Initialize the NeuralNetwork with given properties.
 

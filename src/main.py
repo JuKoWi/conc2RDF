@@ -11,6 +11,7 @@ from conc2RDF import (
     NeuralNetwork,
     load_toml,
     parse_the_arg,
+    validate_input,
 )
 
 
@@ -34,6 +35,7 @@ def main():
         """Read configuration, perform training and save the best result."""
         filepath = args.i
         config = load_toml(filepath)
+        validate_input(config)
         job_dir = Directory(config.data.dirpath)
         jobset = DataSetFromList(job_dir.get_relevant_files())
         train_conc = config.learn.train_selection
